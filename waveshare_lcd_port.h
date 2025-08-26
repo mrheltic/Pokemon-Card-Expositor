@@ -6,6 +6,13 @@
 #include <Arduino.h>
 #include <esp_display_panel.hpp>
 
+// Forward declaration with full namespace
+namespace esp_panel {
+    namespace drivers {
+        class LCD;
+    }
+}
+
 #define ESP_PANEL_USE_1024_600_LCD (1) // 0: 800x480, 1: 1024x600
 
 // I2C Pin define 
@@ -111,5 +118,6 @@
 
 
 void waveshare_lcd_init(); // Function to initialize LCD
+esp_panel::drivers::LCD* waveshare_lcd_get_instance(); // Function to get LCD instance
 
 #endif // End of IO_PORT_H

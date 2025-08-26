@@ -1,74 +1,181 @@
-#include "waveshare_sd_card.h"
+/*
+ * Pokemon Expositor - Main Firmware
+ * 
+ * Hardware: Waveshare ESP32-S3 RGB LCD + SD Card
+ * Features: Pokemon card display with rotation and full-screen support
+ */
 
-esp_expander::CH422G *expander = NULL;
+#include <Arduino.h>
+#include "project_config.h"
+#include "system_manager.h"
 
-// Initial Setup
-void setup(){
-    Serial.begin(115200);
+bool systemReady = false;
 
-    Serial.println("Initialize IO expander");
-    /* Initialize IO expander */
-    expander = new esp_expander::CH422G(EXAMPLE_I2C_SCL_PIN, EXAMPLE_I2C_SDA_PIN, EXAMPLE_I2C_ADDR);
-    expander->init();
-    expander->begin();
-    expander->multiPinMode(TP_RST | LCD_BL | LCD_RST | SD_CS | USB_SEL, OUTPUT);
-    expander->multiDigitalWrite(TP_RST | LCD_BL | LCD_RST, HIGH);
-
-    // Use extended GPIO for SD card
-    expander->digitalWrite(SD_CS, LOW);
-
-    // Turn off backlight
-    expander->digitalWrite(LCD_BL, LOW);
-
-    // When USB_SEL is HIGH, it enables FSUSB42UMX chip and gpio19, gpio20 wired CAN_TX CAN_RX, and then don't use USB Function 
-    expander->digitalWrite(USB_SEL, LOW);
-
-    // Initialize SPI
-    SPI.setHwCs(false);
-    SPI.begin(SD_CLK, SD_MISO, SD_MOSI, SD_SS);
-    if (!SD.begin(SD_SS)) {
-        Serial.println("Card Mount Failed"); // SD card mounting failed
-        return;
-    }
-    uint8_t cardType = SD.cardType();
-
-    if (cardType == CARD_NONE) {
-        Serial.println("No SD card attached"); // No SD card connected
-        return;
-    }
-
-    Serial.print("SD Card Type: "); // SD card type
-    if (cardType == CARD_MMC) {
-        Serial.println("MMC");
-    } else if (cardType == CARD_SD) {
-        Serial.println("SDSC");
-    } else if (cardType == CARD_SDHC) {
-        Serial.println("SDHC");
+void setup() {
+    Serial.begin(SERIAL_BAUD_RATE);
+    delay(STARTUP_DELAY_MS);
+    
+    Serial.println("\n=== " PROJECT_NAME " ===");
+    Serial.println("Version: " PROJECT_VERSION);
+    Serial.println("=====================================\n");
+    
+    // Initialize system components
+    systemReady = systemManager.initializeSystem();
+    
+    if (systemReady) {
+        Serial.println("System ready!");
+        printAvailableCommands();
+        
+        // Display Pokemon image immediately
+        Serial.println("Displaying Pokemon image...");
+        delay(1000);
+        systemManager.displayImage(DEFAULT_IMAGE_PATH);
     } else {
-        Serial.println("UNKNOWN"); // Unknown Type
+        Serial.println("ERROR: System initialization failed!");
     }
-
-    uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-    Serial.printf("SD Card Size: %lluMB\n", cardSize); // SD card size
-
-    // Testing file system functionality
-    listDir(SD, "/", 0);
-    createDir(SD, "/mydir");
-    listDir(SD, "/", 0);
-    removeDir(SD, "/mydir");
-    listDir(SD, "/", 2);
-    writeFile(SD, "/hello.txt", "Hello ");
-    appendFile(SD, "/hello.txt", "World!\n");
-    readFile(SD, "/hello.txt");
-    deleteFile(SD, "/foo.txt");
-    renameFile(SD, "/hello.txt", "/foo.txt");
-    readFile(SD, "/foo.txt");
-    testFileIO(SD, "/test.txt");
-    Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024)); // Total space
-    Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024)); // Used space
 }
 
-// Main Loop
 void loop() {
+    handleSerialCommands();
     
+    if (systemReady) {
+        systemManager.update();
+    }
+    
+    delay(MAIN_LOOP_DELAY_MS);
+}
+
+void printAvailableCommands() {
+    Serial.println("\nAvailable commands:");
+    Serial.println("  'show' - Display Pokemon image (rotated full-screen)");
+    Serial.println("  'show-normal' - Display normal centered image");
+    Serial.println("  'clear' - Clear screen");
+    Serial.println("  'list' - List images on SD card");
+    Serial.println("  'test' - Run system tests");
+    Serial.println("  'status' - Show system status");
+    Serial.println("  'help' - Show all commands");
+    Serial.println();
+}
+
+void handleSerialCommands() {
+    if (!Serial.available()) return;
+    
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+    command.toLowerCase();
+    
+    if (command.length() == 0) return;
+    
+    Serial.printf("Command: '%s'\n", command.c_str());
+    
+    if (!systemReady && command != "help" && command != "status") {
+        Serial.println("System not ready");
+        return;
+    }
+    
+    executeCommand(command);
+    Serial.println();
+}
+
+void executeCommand(const String& command) {
+    // Image commands
+    if (command == "show") {
+        Serial.println("Displaying rotated full-screen image...");
+        systemManager.displayImage(DEFAULT_IMAGE_PATH);
+    }
+    else if (command == "show-normal") {
+        Serial.println("Displaying normal centered image...");
+        systemManager.displayImage(FALLBACK_IMAGE_PATH);
+    }
+    else if (command == "show-original") {
+        Serial.println("Displaying original PNG...");
+        systemManager.displayImage(ORIGINAL_PNG_PATH);
+    }
+    
+    // System commands
+    else if (command == "clear") {
+        lcdManager.clearScreen();
+    }
+    else if (command == "clear-top") {
+        clearTopArea();
+    }
+    else if (command == "list") {
+        systemManager.listImages();
+    }
+    
+    // Test commands
+    else if (command == "test") {
+        systemManager.runAllTests();
+    }
+    else if (command == "sd") {
+        systemManager.runSDTest();
+    }
+    else if (command == "lcd") {
+        systemManager.runLCDTest();
+    }
+    else if (command == "image") {
+        systemManager.runImageTest();
+    }
+    
+    // Utility commands
+    else if (command == "calibrate") {
+        lcdManager.calibrateDisplay();
+    }
+    else if (command == "colorbar") {
+        lcdManager.drawColorBar();
+    }
+    else if (command == "status") {
+        systemManager.printSystemStatus();
+    }
+    else if (command == "restart") {
+        Serial.println("Restarting system...");
+        ESP.restart();
+    }
+    else if (command == "help") {
+        printFullHelp();
+    }
+    else {
+        Serial.printf("Unknown command: '%s'\n", command.c_str());
+        Serial.println("Type 'help' for available commands.");
+    }
+}
+
+void clearTopArea() {
+    Serial.println("Clearing top area...");
+    auto lcd = waveshare_lcd_get_instance();
+    if (lcd) {
+        uint8_t* clearBuffer = (uint8_t*)malloc(1024 * 2 * 50);
+        if (clearBuffer) {
+            memset(clearBuffer, 0, 1024 * 2 * 50);
+            lcd->drawBitmap(0, 0, 1024, 50, clearBuffer);
+            free(clearBuffer);
+            Serial.println("Top area cleared");
+        }
+    }
+}
+
+void printFullHelp() {
+    Serial.println("=== Pokemon Expositor Commands ===");
+    Serial.println("IMAGE DISPLAY:");
+    Serial.println("  show         - Display rotated full-screen Pokemon");
+    Serial.println("  show-normal  - Display normal centered Pokemon");
+    Serial.println("  show-original- Display original PNG");
+    Serial.println();
+    Serial.println("SYSTEM CONTROL:");
+    Serial.println("  clear        - Clear screen");
+    Serial.println("  clear-top    - Clear top area (fix glitches)");
+    Serial.println("  list         - List images on SD card");
+    Serial.println("  status       - Show system status");
+    Serial.println("  restart      - Restart system");
+    Serial.println();
+    Serial.println("TESTING:");
+    Serial.println("  test         - Run all tests");
+    Serial.println("  sd           - Test SD card");
+    Serial.println("  lcd          - Test LCD display");
+    Serial.println("  image        - Test image system");
+    Serial.println();
+    Serial.println("ADVANCED:");
+    Serial.println("  calibrate    - Calibrate LCD");
+    Serial.println("  colorbar     - Draw test pattern");
+    Serial.println("=======================================");
 }

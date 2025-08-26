@@ -1,0 +1,42 @@
+#ifndef __PROJECT_CONFIG_H
+#define __PROJECT_CONFIG_H
+
+// Project Information
+#define PROJECT_NAME "Pokemon Expositor"
+#define PROJECT_VERSION "1.0.0"
+#define PROJECT_AUTHOR "Pokemon Card Expositor Project"
+
+// Debug Configuration
+#define DEBUG_ENABLED 1
+#define DEBUG_SD_OPERATIONS 1
+#define DEBUG_LCD_OPERATIONS 1
+
+// System Configuration
+#define SYSTEM_STATUS_INTERVAL_MS 10000
+#define SERIAL_BAUD_RATE 115200
+#define STARTUP_DELAY_MS 2000
+
+// Feature Flags
+#define ENABLE_SD_CARD 1
+#define ENABLE_LCD_DISPLAY 1
+#define ENABLE_SERIAL_COMMANDS 1
+#define ENABLE_AUTO_TESTS 1
+#define ENABLE_IMAGE_DISPLAY 1
+
+// Image Processing Configuration
+// #define USE_PNGDEC_LIBRARY 1  // Uncomment if PNGdec library is available
+#define ENABLE_TEST_PATTERNS 1
+#define DEFAULT_IMAGE_PATH "/pokemon_rotated.raw"
+#define FALLBACK_IMAGE_PATH "/pokemon.raw"
+#define ORIGINAL_PNG_PATH "/131_hires_1.png"
+
+// LCD Specific Configuration
+#define LCD_BORDER_FIX_ENABLED 1
+#define LCD_REDUCED_BOUNCE_BUFFER 1
+#define LCD_BORDER_FIX_DELAY_MS 500
+
+// Timing Configuration
+#define MAIN_LOOP_DELAY_MS 100
+#define COMMAND_TIMEOUT_MS 5000
+
+#endif
