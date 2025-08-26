@@ -35,6 +35,10 @@
 #define LCD_REDUCED_BOUNCE_BUFFER 1
 #define LCD_BORDER_FIX_DELAY_MS 500
 
+// Display dimensions
+#define SCREEN_WIDTH  1024
+#define SCREEN_HEIGHT 600
+
 // Timing Configuration
 #define MAIN_LOOP_DELAY_MS 100
 #define COMMAND_TIMEOUT_MS 5000

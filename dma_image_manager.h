@@ -9,20 +9,17 @@
 #define DMA_IMAGE_MANAGER_H
 
 #include "image_manager.h"
-#include "driver/dma.h"
-#include "esp_dma_utils.h"
+#include "driver/spi_master.h"
+#include "esp_heap_caps.h"
+#include "esp_log.h"
 
 class DMAImageManager : public ImageManager {
 private:
     // DMA Configuration
-    dma_descriptor_t* dmaDescriptors;
     uint8_t* dmaBuffer;
     size_t dmaBufferSize;
     bool dmaEnabled;
-    
-    // Performance tracking
-    unsigned long lastTransferTime;
-    size_t bytesPerSecond;
+    size_t maxChunkSize;
     
 public:
     DMAImageManager();
@@ -35,9 +32,6 @@ public:
     bool displayImageDMA(const char* filepath);
     bool displayRAWRGB565DMA(const char* filepath);
     
-    // Performance monitoring
-    void printDMAPerformance();
-    
     // DMA management
     bool enableDMA();
     void disableDMA();
@@ -45,18 +39,12 @@ public:
     
 private:
     // DMA setup functions
-    bool setupDMADescriptors();
     bool allocateDMABuffer();
     void freeDMAResources();
     
-    // DMA transfer functions
-    bool transferToDMABuffer(uint8_t* imageData, size_t size);
-    bool startDMATransfer();
-    void waitForDMAComplete();
-    
-    // Performance helpers
-    void startPerformanceTimer();
-    void endPerformanceTimer(size_t bytesTransferred);
+    // Optimized transfer functions
+    bool transferChunkOptimized(uint8_t* imageData, size_t size, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
+    bool memcpyDMA(void* dst, const void* src, size_t size);
 };
 
 extern DMAImageManager dmaImageManager;

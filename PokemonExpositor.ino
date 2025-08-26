@@ -15,23 +15,12 @@ void setup() {
     Serial.begin(SERIAL_BAUD_RATE);
     delay(STARTUP_DELAY_MS);
     
-    Serial.println("\n=== " PROJECT_NAME " ===");
-    Serial.println("Version: " PROJECT_VERSION);
-    Serial.println("=====================================\n");
-    
     // Initialize system components
     systemReady = systemManager.initializeSystem();
     
     if (systemReady) {
-        Serial.println("System ready!");
-        printAvailableCommands();
-        
         // Display Pokemon image immediately
-        Serial.println("Displaying Pokemon image...");
-        delay(1000);
         systemManager.displayImage(DEFAULT_IMAGE_PATH);
-    } else {
-        Serial.println("ERROR: System initialization failed!");
     }
 }
 
@@ -80,15 +69,12 @@ void handleSerialCommands() {
 void executeCommand(const String& command) {
     // Image commands
     if (command == "show") {
-        Serial.println("Displaying rotated full-screen image...");
         systemManager.displayImage(DEFAULT_IMAGE_PATH);
     }
     else if (command == "show-normal") {
-        Serial.println("Displaying normal centered image...");
         systemManager.displayImage(FALLBACK_IMAGE_PATH);
     }
     else if (command == "show-original") {
-        Serial.println("Displaying original PNG...");
         systemManager.displayImage(ORIGINAL_PNG_PATH);
     }
     
@@ -141,7 +127,6 @@ void executeCommand(const String& command) {
 }
 
 void clearTopArea() {
-    Serial.println("Clearing top area...");
     auto lcd = waveshare_lcd_get_instance();
     if (lcd) {
         uint8_t* clearBuffer = (uint8_t*)malloc(1024 * 2 * 50);
@@ -149,7 +134,6 @@ void clearTopArea() {
             memset(clearBuffer, 0, 1024 * 2 * 50);
             lcd->drawBitmap(0, 0, 1024, 50, clearBuffer);
             free(clearBuffer);
-            Serial.println("Top area cleared");
         }
     }
 }

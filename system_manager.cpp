@@ -1,5 +1,6 @@
 #include "system_manager.h"
 #include "project_config.h"
+#include "dma_image_manager.h"
 
 SystemManager systemManager;
 
@@ -12,11 +13,8 @@ SystemManager::~SystemManager() {
 
 bool SystemManager::initializeSystem() {
     if (systemInitialized) {
-        Serial.println("System already initialized");
         return true;
     }
-    
-    Serial.println("=== System Initialization ===");
     
     // Initialize components in dependency order
     if (!initializeSD() || !initializeLCD() || !initializeImage()) {
@@ -25,39 +23,36 @@ bool SystemManager::initializeSystem() {
     }
     
     systemInitialized = true;
-    Serial.println("=== System Ready ===");
-    printSystemStatus();
-    
     return true;
 }
 
 bool SystemManager::initializeSD() {
-    Serial.println("Initializing SD subsystem...");
     if (!sdManager.init()) {
         Serial.println("ERROR: SD Manager failed to initialize");
         return false;
     }
-    Serial.println("✓ SD subsystem ready");
     return true;
 }
 
 bool SystemManager::initializeLCD() {
-    Serial.println("Initializing LCD subsystem...");
     if (!lcdManager.init()) {
         Serial.println("ERROR: LCD Manager failed to initialize");
         return false;
     }
-    Serial.println("✓ LCD subsystem ready");
     return true;
 }
 
 bool SystemManager::initializeImage() {
-    Serial.println("Initializing Image subsystem...");
+    // Try DMA-enhanced image manager first
+    if (dmaImageManager.initWithDMA()) {
+        return true;
+    }
+    
+    // Fallback to standard image manager
     if (!imageManager.init()) {
         Serial.println("ERROR: Image Manager failed to initialize");
         return false;
     }
-    Serial.println("✓ Image subsystem ready");
     return true;
 }
 
@@ -65,6 +60,8 @@ void SystemManager::shutdownSystem() {
     if (systemInitialized) {
         Serial.println("=== System Shutdown ===");
         
+        // Shutdown both image managers
+        dmaImageManager.deinit();
         imageManager.deinit();
         lcdManager.deinit();
         sdManager.deinit();
@@ -80,6 +77,10 @@ void SystemManager::printSystemStatus() {
     Serial.printf("SD Manager: %s\n", sdManager.isInitialized() ? "✓ READY" : "✗ NOT READY");
     Serial.printf("LCD Manager: %s\n", lcdManager.isInitialized() ? "✓ READY" : "✗ NOT READY");
     Serial.printf("Image Manager: %s\n", imageManager.isInitialized() ? "✓ READY" : "✗ NOT READY");
+    Serial.printf("DMA Manager: %s\n", dmaImageManager.isInitialized() ? "✓ READY" : "✗ NOT READY");
+    if (dmaImageManager.isInitialized()) {
+        Serial.printf("DMA Mode: %s\n", dmaImageManager.isDMAEnabled() ? "⚡ ENABLED" : "🐌 DISABLED");
+    }
     Serial.println("=====================\n");
 }
 
@@ -96,19 +97,30 @@ void SystemManager::runLCDTest() {
 }
 
 void SystemManager::runImageTest() {
-    Serial.println("\n--- Image Subsystem Test ---");
-    imageManager.runImageTest();
+    Serial.println("\n--- Enhanced Image Subsystem Test ---");
+    
+    if (dmaImageManager.isInitialized()) {
+        Serial.println("Testing DMA Image Manager...");
+        dmaImageManager.runImageTest();
+    } else {
+        Serial.println("Testing Standard Image Manager...");
+        imageManager.runImageTest();
+    }
+    
     Serial.println("--- Test Complete ---\n");
 }
 
 void SystemManager::displayImage(const char* filepath) {
     if (!systemInitialized) {
-        Serial.println("ERROR: System not initialized");
         return;
     }
     
-    Serial.printf("Displaying image: %s\n", filepath);
-    imageManager.displayPNGFromSD(filepath);
+    // Use DMA manager if available, otherwise fallback to standard
+    if (dmaImageManager.isInitialized()) {
+        dmaImageManager.displayImageDMA(filepath);
+    } else {
+        imageManager.displayPNGFromSD(filepath);
+    }
 }
 
 void SystemManager::listImages() {
@@ -117,7 +129,12 @@ void SystemManager::listImages() {
         return;
     }
     
-    imageManager.listImagesOnSD();
+    // Use whichever image manager is available
+    if (dmaImageManager.isInitialized()) {
+        dmaImageManager.listImagesOnSD();
+    } else {
+        imageManager.listImagesOnSD();
+    }
 }
 
 void SystemManager::runAllTests() {
