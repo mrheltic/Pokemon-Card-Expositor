@@ -23,30 +23,33 @@ const char* html_header = R"HTMLEND(
         
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            color: #e0e6ed;
+            background: #0b1220; /* darker for higher contrast */
+            color: #ffffff;
             min-height: 100vh;
-            padding: 10px;
+            padding: 8px;
             margin: 0;
             overflow-x: hidden;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
         }
         
         .container { 
-            max-width: 1200px; 
+            max-width: 1100px; 
             margin: 0 auto; 
-            background: rgba(30, 30, 46, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(18, 22, 30, 0.98);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.06);
             overflow: hidden;
+            width: calc(100% - 16px);
         }
         
         .header { 
-            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
-            padding: 20px 15px;
+            background: linear-gradient(90deg, #2b2f45 0%, #172033 100%);
+            padding: 16px 12px;
             text-align: center;
             position: relative;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
         }
         
         .header::before {
@@ -60,13 +63,13 @@ const char* html_header = R"HTMLEND(
         }
         
         .header h1 { 
-            font-size: 2em; 
+            font-size: 1.6rem; 
             font-weight: 700; 
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            color: #ffffff;
             position: relative;
             z-index: 1;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
         }
         
         .header p { 
@@ -80,8 +83,8 @@ const char* html_header = R"HTMLEND(
         .main-content {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 15px;
-            padding: 20px 15px;
+            gap: 12px;
+            padding: 16px 12px;
         }
         
         /* Responsive design */
@@ -105,13 +108,16 @@ const char* html_header = R"HTMLEND(
         }
         
         .section { 
-            background: rgba(45, 45, 65, 0.8);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s ease;
+            background: rgba(26, 30, 40, 0.95);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.18s ease;
             position: relative;
             overflow: hidden;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
         }
         
         .section:hover {
@@ -141,9 +147,9 @@ const char* html_header = R"HTMLEND(
         }
         
         .section h3 { 
-            color: #64ffda; 
-            margin-bottom: 20px;
-            font-size: 1.4em;
+            color: #a8ffd6; 
+            margin-bottom: 14px;
+            font-size: 1.1rem;
             font-weight: 600;
             display: flex;
             align-items: center;
@@ -173,14 +179,15 @@ const char* html_header = R"HTMLEND(
         
         input, select, textarea { 
             width: 100%; 
-            padding: 15px 16px;
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            background: rgba(30, 30, 46, 0.8);
-            color: #e0e6ed;
-            font-size: 16px; /* Prevents zoom on iOS */
-            transition: all 0.3s ease;
+            padding: 12px 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            background: rgba(18, 22, 30, 0.9);
+            color: #ffffff;
+            font-size: 15px; /* Prevents zoom on iOS */
+            transition: all 0.18s ease;
             touch-action: manipulation;
+            box-sizing: border-box;
         }
         
         @media (min-width: 768px) {
@@ -200,7 +207,7 @@ const char* html_header = R"HTMLEND(
         input[type="range"] {
             padding: 0;
             height: 8px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.06);
             border-radius: 4px;
             appearance: none;
             touch-action: manipulation;
@@ -218,14 +225,26 @@ const char* html_header = R"HTMLEND(
         
         .range-value {
             display: inline-block;
-            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-weight: bold;
-            margin-left: 10px;
-            min-width: 50px;
+            background: #2e3b4e;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+            min-width: 40px;
             text-align: center;
+            font-size: 0.9em;
+        }
+
+        /* Mobile tweaks to avoid overflow */
+        @media (max-width: 480px) {
+            .container { padding: 8px; }
+            .header h1 { font-size: 1.2rem; }
+            .section { padding: 12px; border-radius: 8px; }
+            input, select, textarea { padding: 10px; font-size: 14px; }
+            .range-value { min-width: 36px; padding: 2px 8px; }
+            .tabs { flex-direction: row; overflow-x: auto; }
+            .tab { padding: 10px 12px; font-size: 0.95em; }
         }
         
         button { 
@@ -283,9 +302,33 @@ const char* html_header = R"HTMLEND(
         
         .control-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 16px;
+            justify-items: center; /* make buttons symmetric */
+        }
+
+        /* Compact action buttons */
+        .btn-compact {
+            padding: 6px 10px;
+            min-width: 100px;
+            font-size: 14px;
+        }
+
+        /* Square small icon button (used for show-password) */
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            line-height: 32px;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        /* Vertical control column for Start/Pause/Stop to be symmetric */
+        .vertical-controls {
+            display:flex; flex-direction:column; gap:8px; width:100%; max-width:180px; align-items:center;
         }
         
         @media (min-width: 768px) {
@@ -314,6 +357,24 @@ const char* html_header = R"HTMLEND(
             padding: 12px;
             border: 1px solid rgba(255,255,255,0.1);
             text-align: center;
+        }
+
+        /* Storage usage progress bar */
+        .storage-progress {
+            background: rgba(255,255,255,0.06);
+            border-radius: 8px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+            margin-top: 8px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .storage-progress .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg,#4ecdc4,#44a08d);
+            width: 0%;
+            transition: width 300ms ease;
         }
         
         @media (min-width: 768px) {
@@ -412,6 +473,9 @@ const char* html_header = R"HTMLEND(
             transition: all 0.3s ease;
             color: #b8c5d1;
         }
+
+    /* ensure buttons don't overflow on small screens */
+    button { max-width: 220px; width: 100%; }
         
         .tab.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -453,7 +517,10 @@ const char* html_wifi_form = R"HTMLEND(
                     
                     <div class="form-group">
                         <label for="password">WiFi Password:</label>
-                        <input type="password" id="password" name="password" placeholder="Enter WiFi password">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="password" id="password" name="password" placeholder="Enter WiFi password" style="flex:1;">
+                            <button type="button" onclick="togglePasswordVisibility()" title="Show/Hide password" class="icon-btn">👁️</button>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -498,8 +565,21 @@ const char* html_slideshow_form = R"HTMLEND(
                     
                     <div class="form-group">
                         <label for="interval">Display Interval:</label>
-                        <input type="range" id="interval" name="interval" min="1" max="300" value="10" oninput="updateIntervalValue(this.value)">
+                        <input type="range" id="interval" name="interval" min="0" max="100" value="20" oninput="updateIntervalValue(this.value)">
                         <span class="range-value" id="intervalValue">10s</span>
+                        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                            <!-- Quick important steps -->
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(1)">1s</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(5)">5s</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(10)">10s</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(30)">30s</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(60)">1m</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(300)">5m</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(900)">15m</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(3600)">1h</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(21600)">6h</button>
+                            <button type="button" class="btn-primary" onclick="setIntervalPreset(86400)">1d</button>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -519,9 +599,13 @@ const char* html_slideshow_form = R"HTMLEND(
                     </div>
                     
                     <div class="form-group">
-                        <label for="brightness">Display Brightness:</label>
-                        <input type="range" id="brightness" name="brightness" min="10" max="255" value="128" oninput="updateBrightnessValue(this.value)">
-                        <span class="range-value" id="brightnessValue">50%</span>
+                        <label for="disableBrightness">Disable Brightness (keep display off):</label>
+                        <input type="checkbox" id="disableBrightness" name="disableBrightness" checked onchange="onDisableBrightnessChange(this.checked)"> (default: disabled)
+                        <div style="margin-top:8px;">
+                            <label for="brightness">Display Brightness:</label>
+                            <input type="range" id="brightness" name="brightness" min="0" max="255" value="0" oninput="updateBrightnessValue(this.value)" disabled>
+                            <span class="range-value" id="brightnessValue">0%</span>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -535,11 +619,7 @@ const char* html_slideshow_form = R"HTMLEND(
                         </select>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="transition">Transition Time:</label>
-                        <input type="range" id="transition" name="transition" min="0" max="2000" value="500" oninput="updateTransitionValue(this.value)">
-                        <span class="range-value" id="transitionValue">500ms</span>
-                    </div>
+                    <!-- Transition removed as per UI simplification -->
                     
                     <div class="form-group">
                         <label for="autoStart">Auto Start on Boot:</label>
@@ -578,12 +658,14 @@ const char* html_controls = R"HTMLEND(
             <div class="section">
                 <h3>🎮 Slideshow Controls</h3>
                 <div class="control-grid">
-                    <button class="btn-success" onclick="controlSlideshow('start')">▶️ Start</button>
-                    <button class="btn-warning" onclick="controlSlideshow('pause')">⏸️ Pause</button>
-                    <button class="btn-danger" onclick="controlSlideshow('stop')">⏹️ Stop</button>
-                    <button class="btn-primary" onclick="controlSlideshow('next')">⏭️ Next</button>
+                    <!-- Ordered for symmetry: Prev | Start/Pause/Stop | Next -->
                     <button class="btn-primary" onclick="controlSlideshow('prev')">⏮️ Previous</button>
-                    <button class="btn-primary" onclick="reloadImages()">🔄 Reload</button>
+                    <div class="vertical-controls">
+                        <button class="btn-success btn-compact" onclick="controlSlideshow('start')">▶️ Start</button>
+                        <button class="btn-warning btn-compact" onclick="controlSlideshow('pause')">⏸️ Pause</button>
+                        <button class="btn-danger btn-compact" onclick="controlSlideshow('stop')">⏹️ Stop</button>
+                    </div>
+                    <button class="btn-primary" onclick="controlSlideshow('next')">⏭️ Next</button>
                 </div>
             </div>
             
@@ -615,10 +697,10 @@ const char* html_controls = R"HTMLEND(
                         <div class="status-label">Images Found</div>
                     </div>
                 </div>
-                <div style="margin-top: 20px;">
-                    <button class="btn-primary" onclick="loadConfig()">🔄 Refresh Status</button>
-                    <button class="btn-warning" onclick="restartDevice()" style="margin-left: 10px;">🔄 Restart Device</button>
-                    <button class="btn-danger" onclick="factoryReset()" style="margin-left: 10px;">⚠️ Factory Reset</button>
+                <div style="margin-top: 20px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+                    <button class="btn-primary btn-compact" onclick="loadConfig()">🔄 Refresh</button>
+                    <button class="btn-warning btn-compact" onclick="restartDevice()">🔁 Restart</button>
+                    <button class="btn-danger btn-compact" onclick="factoryReset()">⚠️ Reset</button>
                 </div>
             </div>
             
@@ -626,7 +708,6 @@ const char* html_controls = R"HTMLEND(
                 <div class="tabs">
                     <div class="tab active" onclick="showTab('advanced-tab')">⚙️ Advanced</div>
                     <div class="tab" onclick="showTab('display-tab')">🖥️ Display</div>
-                    <div class="tab" onclick="showTab('storage-tab')">💾 Storage</div>
                     <div class="tab" onclick="showTab('logs-tab')">📝 Logs</div>
                 </div>
                 
@@ -669,17 +750,7 @@ const char* html_controls = R"HTMLEND(
                     <div class="section">
                         <h3>🖥️ Display Settings</h3>
                         <form id="displayForm">
-                            <div class="form-group">
-                                <label for="contrast">Contrast:</label>
-                                <input type="range" id="contrast" name="contrast" min="0" max="100" value="50" oninput="updateContrastValue(this.value)">
-                                <span class="range-value" id="contrastValue">50%</span>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="saturation">Saturation:</label>
-                                <input type="range" id="saturation" name="saturation" min="0" max="200" value="100" oninput="updateSaturationValue(this.value)">
-                                <span class="range-value" id="saturationValue">100%</span>
-                            </div>
+                            <!-- Contrast and Saturation controls removed for simplicity on mobile and to reduce confusion -->
                             
                             <div class="form-group">
                                 <label for="screensaverTime">Screensaver Timeout (minutes):</label>
@@ -700,46 +771,17 @@ const char* html_controls = R"HTMLEND(
                     </div>
                 </div>
                 
-                <div id="storage-tab" class="tab-content">
-                    <div class="section">
-                        <h3>💾 Storage Management</h3>
-                        <div class="status-grid">
-                            <div class="status-card">
-                                <div class="status-value" id="totalSpaceValue">-</div>
-                                <div class="status-label">Total Space</div>
-                            </div>
-                            <div class="status-card">
-                                <div class="status-value" id="usedSpaceValue">-</div>
-                                <div class="status-label">Used Space</div>
-                            </div>
-                            <div class="status-card">
-                                <div class="status-value" id="freeSpaceValue">-</div>
-                                <div class="status-label">Free Space</div>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 20px;">
-                            <button class="btn-primary" onclick="scanImages()">🔍 Scan for Images</button>
-                            <button class="btn-warning" onclick="clearCache()" style="margin-left: 10px;">🗑️ Clear Cache</button>
-                            <button class="btn-danger" onclick="formatStorage()" style="margin-left: 10px;">⚠️ Format Storage</button>
-                        </div>
-                        
-                        <div style="margin-top: 20px;">
-                            <h4>📁 Current Directory:</h4>
-                            <div id="currentDirectory" style="background: rgba(30,30,46,0.8); padding: 10px; border-radius: 5px; font-family: monospace;">
-                                /
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Storage tab removed as requested -->
                 
                 <div id="logs-tab" class="tab-content">
                     <div class="section">
                         <h3>📝 System Logs</h3>
                         <div style="margin-bottom: 15px;">
                             <button class="btn-primary" onclick="refreshLogs()">🔄 Refresh</button>
-                            <button class="btn-warning" onclick="clearLogs()" style="margin-left: 10px;">🗑️ Clear Logs</button>
-                            <button class="btn-primary" onclick="downloadLogs()" style="margin-left: 10px;">💾 Download</button>
+                            <div style="display:inline-flex; gap:8px;">
+                                <button class="btn-warning btn-compact" onclick="clearLogs()">🗑️ Clear Logs</button>
+                                <button class="btn-primary btn-compact" onclick="downloadLogs()">💾 Download</button>
+                            </div>
                         </div>
                         <textarea id="systemLogs" readonly style="height: 300px; font-family: monospace; font-size: 12px;">
 Loading system logs...
@@ -818,7 +860,45 @@ const char* html_script = R"HTMLEND(
         }
         
         function updateIntervalValue(value) {
-            document.getElementById('intervalValue').textContent = value + 's';
+            // If value is a slider position (0-100) -> map exponentially to 1s..86400s
+            // If value is already seconds ( > 100 ) we display it directly
+            const min = 1;
+            const max = 86400;
+            let seconds = Number(value);
+            if (seconds >= 0 && seconds <= 100) {
+                const exponent = seconds / 100; // 0..1
+                seconds = Math.round(min * Math.pow(max / min, exponent));
+                // store mapped value on slider for save
+                const el = document.getElementById('interval'); if (el) el.dataset.mapped = seconds;
+            }
+            document.getElementById('intervalValue').textContent = formatSeconds(seconds);
+        }
+
+        function setIntervalPreset(seconds) {
+            const min = 1; const max = 86400;
+            const ratio = Math.log(Math.max(seconds,1) / min) / Math.log(max / min);
+            const pos = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+            const el = document.getElementById('interval'); if (el) { el.value = pos; updateIntervalValue(pos); }
+        }
+
+        function formatSeconds(s) {
+            if (s < 60) return s + 's';
+            if (s < 3600) return Math.round(s/60) + 'm';
+            if (s < 86400) return Math.round(s/3600) + 'h';
+            return Math.round(s/86400) + 'd';
+        }
+
+        function togglePasswordVisibility() {
+            const p = document.getElementById('password'); if (!p) return; p.type = p.type === 'password' ? 'text' : 'password';
+        }
+
+        function onDisableBrightnessChange(checked) {
+            const b = document.getElementById('brightness');
+            if (b) {
+                b.disabled = checked;
+                if (checked) { b.value = 0; updateBrightnessValue(0); }
+                else { b.value = 128; updateBrightnessValue(128); }
+            }
         }
         
         function updateBrightnessValue(value) {
@@ -830,13 +910,7 @@ const char* html_script = R"HTMLEND(
             document.getElementById('transitionValue').textContent = value + 'ms';
         }
         
-        function updateContrastValue(value) {
-            document.getElementById('contrastValue').textContent = value + '%';
-        }
-        
-        function updateSaturationValue(value) {
-            document.getElementById('saturationValue').textContent = value + '%';
-        }
+    /* Contrast and saturation controls removed */
         
         function showAlert(message, type = 'info', duration = 5000) {
             clearTimeout(alertTimeout);
@@ -884,12 +958,14 @@ const char* html_script = R"HTMLEND(
                 
                 // Update slideshow form
                 updateFormField('enabled', data.slideshow?.enabled ? 'true' : 'false');
-                updateFormField('interval', (data.slideshow?.intervalMs || 10000) / 1000);
+                // Set interval slider position using preset mapping helper
+                const intervalSeconds = (data.slideshow?.intervalMs || 10000) / 1000;
+                setIntervalPreset(intervalSeconds);
                 updateFormField('randomOrder', data.slideshow?.randomOrder ? 'true' : 'false');
                 updateFormField('loop', data.slideshow?.loop ? 'true' : 'false');
                 updateFormField('brightness', data.slideshow?.brightness || 128);
                 updateFormField('imageFilter', data.slideshow?.imageFilter || '');
-                updateFormField('transition', data.slideshow?.transitionMs || 500);
+                // transition removed from UI
                 updateFormField('autoStart', data.slideshow?.autoStart ? 'true' : 'false');
                 updateFormField('scalingMode', data.slideshow?.scalingMode || 'fit');
                 updateFormField('rotationAngle', data.slideshow?.rotationAngle || '0');
@@ -900,18 +976,18 @@ const char* html_script = R"HTMLEND(
                 updateFormField('cacheEnabled', data.advanced?.cacheEnabled ? 'true' : 'false');
                 updateFormField('debugMode', data.advanced?.debugMode ? 'true' : 'false');
                 
-                // Update display form
-                updateFormField('contrast', data.display?.contrast || 50);
-                updateFormField('saturation', data.display?.saturation || 100);
+                // Update display form (contrast and saturation controls removed)
                 updateFormField('screensaverTime', data.display?.screensaverTime || 0);
                 updateFormField('powerSaveMode', data.display?.powerSaveMode || 'none');
                 
                 // Update range value displays
                 updateBrightnessValue(data.slideshow?.brightness || 128);
-                updateIntervalValue((data.slideshow?.intervalMs || 10000) / 1000);
-                updateTransitionValue(data.slideshow?.transitionMs || 500);
-                updateContrastValue(data.display?.contrast || 50);
-                updateSaturationValue(data.display?.saturation || 100);
+                // intervalValue already updated by setIntervalPreset
+                // transition removed from UI
+                // initialize disableBrightness checkbox
+                const disableEl = document.getElementById('disableBrightness');
+                if (disableEl) disableEl.checked = !!data.slideshow?.disableBrightness;
+                // Contrast and saturation controls removed from UI
                 
                 // Update status cards
                 updateStatusCards(data);
@@ -959,6 +1035,7 @@ const char* html_script = R"HTMLEND(
             updateStatusCard('totalSpaceValue', formatBytes(status.totalSpace || 0));
             updateStatusCard('usedSpaceValue', formatBytes(status.usedSpace || 0));
             updateStatusCard('freeSpaceValue', formatBytes(status.freeSpace || 0));
+            // Storage fields removed from UI
         }
         
         function updateStatusCard(cardId, value) {
@@ -1025,9 +1102,17 @@ const char* html_script = R"HTMLEND(
                 data.randomOrder = data.randomOrder === 'true';
                 data.loop = data.loop === 'true';
                 data.autoStart = data.autoStart === 'true';
-                data.intervalMs = parseInt(data.interval) * 1000;
+                // interval slider stores mapped seconds in dataset.mapped
+                const slider = document.getElementById('interval');
+                if (slider && slider.dataset && slider.dataset.mapped) {
+                    data.intervalMs = parseInt(slider.dataset.mapped) * 1000;
+                } else {
+                    data.intervalMs = parseInt(data.interval) * 1000;
+                }
                 data.brightness = parseInt(data.brightness);
-                data.transitionMs = parseInt(data.transition);
+                // include disableBrightness flag
+                data.disableBrightness = !!document.getElementById('disableBrightness') && document.getElementById('disableBrightness').checked;
+                // transition removed from UI; no transitionMs sent
                 data.rotationAngle = parseInt(data.rotationAngle);
                 
                 const response = await fetch('/save-config', {
@@ -1086,8 +1171,7 @@ const char* html_script = R"HTMLEND(
                 const formData = new FormData(document.getElementById('displayForm'));
                 const data = Object.fromEntries(formData);
                 
-                data.contrast = parseInt(data.contrast);
-                data.saturation = parseInt(data.saturation);
+                // Contrast and saturation removed from UI; only keep screensaver
                 data.screensaverTime = parseInt(data.screensaverTime);
                 
                 const response = await fetch('/save-config', {
@@ -1611,10 +1695,13 @@ bool WiFiConfigManager::loadSlideshowConfig() {
     slideshowConfig.intervalMs = doc["intervalMs"] | 10000;
     slideshowConfig.randomOrder = doc["randomOrder"] | false;
     slideshowConfig.loop = doc["loop"] | true;
-    slideshowConfig.brightness = doc["brightness"] | 128;
+    // Default to display off by default for slideshow (user requested)
+    slideshowConfig.brightness = doc["brightness"] | 0;
     slideshowConfig.imageFilter = doc["imageFilter"] | ".raw";
-    slideshowConfig.transitionMs = doc["transitionMs"] | 500;
+    // transitionMs removed from UI; ignore any incoming value
     slideshowConfig.autoStart = doc["autoStart"] | false;
+    // New flag: disableBrightness (if true, keep display off regardless of brightness)
+    slideshowConfig.disableBrightness = doc.containsKey("disableBrightness") ? doc["disableBrightness"] | true : true;
     
     Serial.println("[WiFi] Slideshow configuration loaded");
     return true;
@@ -1651,8 +1738,10 @@ bool WiFiConfigManager::saveSlideshowConfig() {
     doc["loop"] = slideshowConfig.loop;
     doc["brightness"] = slideshowConfig.brightness;
     doc["imageFilter"] = slideshowConfig.imageFilter;
-    doc["transitionMs"] = slideshowConfig.transitionMs;
+    // transitionMs intentionally omitted (removed from UI)
     doc["autoStart"] = slideshowConfig.autoStart;
+    // Persist disableBrightness so UI and device agree
+    doc["disableBrightness"] = slideshowConfig.disableBrightness;
     
     File file = SD.open(SLIDESHOW_CONFIG_FILE, "w");
     if (!file) {
@@ -1680,10 +1769,12 @@ void WiFiConfigManager::setDefaultConfigs() {
     slideshowConfig.intervalMs = 10000;  // 10 seconds
     slideshowConfig.randomOrder = false;
     slideshowConfig.loop = true;
-    slideshowConfig.brightness = 128;
+    // default slideshow brightness set to 0 and disabled by default (checkbox checked)
+    slideshowConfig.brightness = 0;
     slideshowConfig.imageFilter = ".raw";
-    slideshowConfig.transitionMs = 500;
+    // transition disabled by default
     slideshowConfig.autoStart = false;
+    slideshowConfig.disableBrightness = true;
     
     // Default advanced config
     advancedConfig.enablePreloading = true;
@@ -1699,7 +1790,6 @@ void WiFiConfigManager::setDefaultConfigs() {
     
     // Default display config
     displayConfig.brightness = 128;
-    displayConfig.contrast = 128;
     displayConfig.scalingMode = "fit";
     displayConfig.rotation = 0;
     displayConfig.flipHorizontal = false;
@@ -1768,7 +1858,6 @@ bool WiFiConfigManager::loadDisplayConfig() {
     }
     
     displayConfig.brightness = doc["brightness"] | 128;
-    displayConfig.contrast = doc["contrast"] | 128;
     displayConfig.scalingMode = doc["scalingMode"] | "fit";
     displayConfig.rotation = doc["rotation"] | 0;
     displayConfig.flipHorizontal = doc["flipHorizontal"] | false;
@@ -1813,7 +1902,6 @@ bool WiFiConfigManager::saveDisplayConfig() {
     JsonDocument doc;
     
     doc["brightness"] = displayConfig.brightness;
-    doc["contrast"] = displayConfig.contrast;
     doc["scalingMode"] = displayConfig.scalingMode;
     doc["rotation"] = displayConfig.rotation;
     doc["flipHorizontal"] = displayConfig.flipHorizontal;
@@ -1955,12 +2043,13 @@ void WiFiConfigManager::handleSaveConfig() {
         if (doc["slideshow"].containsKey("brightness")) {
             slideshowConfig.brightness = doc["slideshow"]["brightness"].as<uint8_t>();
         }
+        if (doc["slideshow"].containsKey("disableBrightness")) {
+            slideshowConfig.disableBrightness = doc["slideshow"]["disableBrightness"].as<bool>();
+        }
         if (doc["slideshow"].containsKey("imageFilter")) {
             slideshowConfig.imageFilter = doc["slideshow"]["imageFilter"].as<String>();
         }
-        if (doc["slideshow"].containsKey("transitionMs")) {
-            slideshowConfig.transitionMs = doc["slideshow"]["transitionMs"].as<uint32_t>();
-        }
+        // transitionMs intentionally ignored (removed from UI)
         if (doc["slideshow"].containsKey("autoStart")) {
             slideshowConfig.autoStart = doc["slideshow"]["autoStart"].as<bool>();
         }
@@ -1992,16 +2081,34 @@ void WiFiConfigManager::handleGetConfig() {
     doc["slideshow"]["loop"] = slideshowConfig.loop;
     doc["slideshow"]["brightness"] = slideshowConfig.brightness;
     doc["slideshow"]["imageFilter"] = slideshowConfig.imageFilter;
-    doc["slideshow"]["transitionMs"] = slideshowConfig.transitionMs;
+    // transitionMs removed from response
     doc["slideshow"]["autoStart"] = slideshowConfig.autoStart;
+    doc["slideshow"]["disableBrightness"] = slideshowConfig.disableBrightness;
     
     // Status info
-    doc["status"]["wifiConnected"] = wifiConnected;
-    doc["status"]["localIP"] = getLocalIP();
-    doc["status"]["apIP"] = getAPIP();
-    doc["status"]["uptime"] = millis();
-    doc["status"]["freeHeap"] = ESP.getFreeHeap();
-    doc["status"]["chipModel"] = ESP.getChipModel();
+    // Status info (include system status snapshot)
+    SystemStatus status = getSystemStatus();
+    doc["status"]["wifiConnected"] = status.wifiConnected;
+    doc["status"]["localIP"] = status.localIP;
+    doc["status"]["apIP"] = status.apIP;
+    doc["status"]["uptime"] = status.uptime;
+    doc["status"]["freeHeap"] = status.freeHeap;
+    doc["status"]["chipModel"] = status.chipModel;
+    doc["status"]["imagesCount"] = status.imagesCount;
+    doc["status"]["totalSpace"] = status.totalSpace;
+    doc["status"]["usedSpace"] = status.usedSpace;
+    doc["status"]["freeSpace"] = status.freeSpace;
+    // SD diagnostics
+    uint8_t ct = SD.cardType();
+    const char* ctStr = "UNKNOWN";
+    if (ct == CARD_NONE) ctStr = "NONE";
+    else if (ct == CARD_MMC) ctStr = "MMC";
+    else if (ct == CARD_SD) ctStr = "SDSC";
+    else if (ct == CARD_SDHC) ctStr = "SDHC";
+    doc["status"]["cardType"] = ctStr;
+    uint64_t cardSizeMB = 0;
+    if (SD.totalBytes() > 0) cardSizeMB = (SD.totalBytes() + (1024ULL*1024ULL - 1)) / (1024ULL*1024ULL);
+    doc["status"]["cardSizeMB"] = cardSizeMB;
     
     String response;
     serializeJson(doc, response);
@@ -2112,7 +2219,6 @@ void WiFiConfigManager::handleDisplayConfig() {
     JsonDocument doc;
     
     doc["brightness"] = displayConfig.brightness;
-    doc["contrast"] = displayConfig.contrast;
     doc["scalingMode"] = displayConfig.scalingMode;
     doc["rotation"] = displayConfig.rotation;
     doc["flipHorizontal"] = displayConfig.flipHorizontal;
@@ -2142,7 +2248,6 @@ void WiFiConfigManager::handleSaveDisplay() {
     }
     
     displayConfig.brightness = doc["brightness"] | 128;
-    displayConfig.contrast = doc["contrast"] | 128;
     displayConfig.scalingMode = doc["scalingMode"] | "fit";
     displayConfig.rotation = doc["rotation"] | 0;
     displayConfig.flipHorizontal = doc["flipHorizontal"] | false;
@@ -2183,6 +2288,18 @@ void WiFiConfigManager::handleGetSystemStatus() {
     doc["totalSpace"] = status.totalSpace;
     doc["usedSpace"] = status.usedSpace;
     doc["freeSpace"] = status.freeSpace;
+    // Add SD card diagnostics
+    uint8_t ct = SD.cardType();
+    const char* ctStr = "UNKNOWN";
+    if (ct == CARD_NONE) ctStr = "NONE";
+    else if (ct == CARD_MMC) ctStr = "MMC";
+    else if (ct == CARD_SD) ctStr = "SDSC";
+    else if (ct == CARD_SDHC) ctStr = "SDHC";
+    doc["cardType"] = ctStr;
+    // cardSize in MB (rounded)
+    uint64_t cardSizeMB = 0;
+    if (SD.totalBytes() > 0) cardSizeMB = (SD.totalBytes() + (1024ULL*1024ULL - 1)) / (1024ULL*1024ULL);
+    doc["cardSizeMB"] = cardSizeMB;
     
     String response;
     serializeJson(doc, response);
@@ -2432,7 +2549,7 @@ void WiFiConfigManager::printStatus() {
     Serial.printf("Loop: %s\n", slideshowConfig.loop ? "YES" : "NO");
     Serial.printf("Brightness: %d\n", slideshowConfig.brightness);
     Serial.printf("Image Filter: %s\n", slideshowConfig.imageFilter.c_str());
-    Serial.printf("Transition: %d ms\n", slideshowConfig.transitionMs);
+    // Transition removed from UI and logs
     Serial.printf("Auto Start: %s\n", slideshowConfig.autoStart ? "YES" : "NO");
     
     Serial.printf("\nWeb Interface: http://%s/\n", 
@@ -2566,6 +2683,19 @@ SystemStatus WiFiConfigManager::getSystemStatus() {
     status.totalSpace = SD.totalBytes();
     status.usedSpace = SD.usedBytes();
     status.freeSpace = status.totalSpace - status.usedSpace;
+
+    // Card type and size (MB) for UI
+    uint8_t ct = SD.cardType();
+    String ctStr = "UNKNOWN";
+    if (ct == CARD_NONE) ctStr = "NONE";
+    else if (ct == CARD_MMC) ctStr = "MMC";
+    else if (ct == CARD_SD) ctStr = "SDSC";
+    else if (ct == CARD_SDHC) ctStr = "SDHC";
+    else ctStr = "UNKNOWN";
+
+    // extend SystemStatus through dynamic fields by writing to variables used by handlers
+    // We'll add these to the JSON when requested
+    // cardType stored temporarily in chipModel (not ideal) - instead we'll compute in handler
     
     return status;
 }
@@ -2634,11 +2764,8 @@ uint32_t WiFiConfigManager::getImageCount() {
     // Count actual image files in SD card images directory
     File root = SD.open("/images");
     if (!root || !root.isDirectory()) {
-        // Try root directory if images folder doesn't exist
-        root = SD.open("/");
-        if (!root || !root.isDirectory()) {
-            return 0;
-        }
+        // Only search inside /images as requested
+        return 0;
     }
     
     uint32_t count = 0;
@@ -2658,10 +2785,15 @@ uint32_t WiFiConfigManager::getImageCount() {
 // Additional system integration functions
 void WiFiConfigManager::applyBrightnessSettings() {
     try {
-        int brightnessPercentage = map(slideshowConfig.brightness, 0, 255, 0, 100);
-        systemManager.setBrightness(brightnessPercentage);
-        Serial.printf("[WiFi] Applied brightness setting: %d%% (%d/255)\n", 
-                     brightnessPercentage, slideshowConfig.brightness);
+        if (slideshowConfig.disableBrightness) {
+            systemManager.setBrightness(0);
+            Serial.println("[WiFi] Slideshow brightness disabled by config (display off)");
+        } else {
+            int brightnessPercentage = map(slideshowConfig.brightness, 0, 255, 0, 100);
+            systemManager.setBrightness(brightnessPercentage);
+            Serial.printf("[WiFi] Applied brightness setting: %d%% (%d/255)\n", 
+                         brightnessPercentage, slideshowConfig.brightness);
+        }
         addLogEntry("INFO", "Brightness settings applied from configuration");
     } catch (...) {
         Serial.println("[WiFi] Failed to apply brightness settings");

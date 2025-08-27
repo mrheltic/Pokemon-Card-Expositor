@@ -280,8 +280,12 @@ bool SystemManager::startSlideshow() {
     slideshowActive = true;
     lastSlideshowUpdate = millis();
     
-    // Set brightness according to config
-    setBrightness((config.brightness * 100) / 255);
+    // Set brightness according to config; if disabled, force 0
+    if (config.disableBrightness) {
+        setBrightness(0);
+    } else {
+        setBrightness((config.brightness * 100) / 255);
+    }
     
     Serial.println("[Slideshow] Started");
     return true;

@@ -10,6 +10,15 @@
 #include "project_config.h"
 #include "waveshare_lcd_port.h"
 
+// Logging macros controllable via DMA_VERBOSE_LOGGING
+#if defined(DMA_VERBOSE_LOGGING) && (DMA_VERBOSE_LOGGING == 1)
+#define DMA_LOG(...) do { Serial.printf(__VA_ARGS__); Serial.print('\n'); } while(0)
+#else
+#define DMA_LOG(...) do { } while(0)
+#endif
+
+#define DMA_ERR(...) do { Serial.printf(__VA_ARGS__); Serial.print('\n'); } while(0)
+
 DMAImageManager dmaImageManager;
 
 DMAImageManager::DMAImageManager() : 
@@ -28,7 +37,8 @@ bool DMAImageManager::init() {
     if (initialized) return true;
     
     initialized = true;
-    Serial.println("DMA Image Manager: ✓ Initialized");
+    // Minimal log
+    DMA_LOG("[DMA] Initialized");
     return true;
 }
 
@@ -40,13 +50,13 @@ void DMAImageManager::deinit() {
 bool DMAImageManager::initWithDMA() {
     // Initialize base functionality first
     if (!init()) {
-        Serial.println("ERROR: Base image manager initialization failed");
+        DMA_ERR("[DMA] ERROR: base initialization failed");
         return false;
     }
     
     // Setup DMA for LCD transfers
     if (!enableDMA()) {
-        Serial.println("WARNING: DMA setup failed, falling back to CPU transfers");
+        DMA_ERR("[DMA] DMA setup failed, using CPU fallback");
         return true; // Still functional without DMA
     }
     
@@ -70,7 +80,7 @@ bool DMAImageManager::enableDMA() {
     dmaBufferSize = max(dmaBufferSize, (size_t)(SCREEN_WIDTH * 10 * 2)); // Minimum 10 lines
     
     if (!allocateDMABuffer()) {
-        Serial.println("Failed to allocate DMA buffer");
+        DMA_ERR("[DMA] ERROR: failed to allocate DMA buffer");
         return false;
     }
     
@@ -111,40 +121,36 @@ bool DMAImageManager::displayImageDMA(const char* filepath) {
     // Check if it's a RAW RGB565 file (should be exactly 1024x600)
     if (filename.endsWith(".raw")) {
         return displayFixedSizeImageDMA(filepath);  // Use optimized method
-    } 
-    else if (filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".bmp")) {
-        // For other formats, assume they're pre-processed to 1024x600 and converted to RAW
-        Serial.println("⚠️ Non-RAW format detected. For best performance, convert to RAW RGB565 1024x600");
-        return displayPNGFromSD(filepath);
-    }
-    else {
-        // Unknown format, try as RAW
-        Serial.println("🔍 Unknown format, trying as RAW RGB565...");
-        return displayFixedSizeImageDMA(filepath);
+    } else if (filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".bmp")) {
+    // Non-RAW formats handled by PNG path (not DMA-optimized)
+    DMA_LOG("[DMA] Non-RAW format detected");
+    return displayPNGFromSD(filepath);
+    } else {
+    // Unknown format, try as RAW
+    DMA_LOG("[DMA] Unknown format - attempting RAW path");
+    return displayFixedSizeImageDMA(filepath);
     }
 }
 
 bool DMAImageManager::displayFixedSizeImageDMA(const char* filepath) {
     if (!isInitialized()) {
-        Serial.println("❌ DMA Image Manager not initialized");
+        DMA_ERR("❌ DMA Image Manager not initialized");
         return false;
     }
     
-    Serial.printf("🚀 Loading FIXED SIZE image: %s\n", filepath);
-    Serial.printf("   Expected: %dx%d (%d bytes)\n", FIXED_IMAGE_WIDTH, FIXED_IMAGE_HEIGHT, FIXED_IMAGE_SIZE);
+    // Loading fixed-size image
     
     // Open file
     File imageFile = SD.open(filepath);
     if (!imageFile) {
-        Serial.printf("❌ Cannot open file: %s\n", filepath);
+        DMA_ERR("[DMA] ERROR: cannot open file: %s", filepath);
         return false;
     }
     
     // Verify file size matches expected dimensions
     size_t fileSize = imageFile.size();
     if (fileSize != FIXED_IMAGE_SIZE) {
-        Serial.printf("❌ File size mismatch! Expected %d bytes, got %d bytes\n", FIXED_IMAGE_SIZE, fileSize);
-        Serial.println("   Make sure image is exactly 1024x600 RGB565!");
+        DMA_ERR("[DMA] ERROR: file size mismatch (expected %d, got %d)", FIXED_IMAGE_SIZE, fileSize);
         imageFile.close();
         return false;
     }
@@ -152,7 +158,7 @@ bool DMAImageManager::displayFixedSizeImageDMA(const char* filepath) {
     // Get LCD instance
     auto lcd = waveshare_lcd_get_instance();
     if (!lcd) {
-        Serial.println("❌ LCD not available");
+        DMA_ERR("[DMA] ERROR: LCD not available");
         imageFile.close();
         return false;
     }
@@ -160,54 +166,36 @@ bool DMAImageManager::displayFixedSizeImageDMA(const char* filepath) {
     unsigned long startTime = millis();
     
     if (dmaEnabled && dmaBuffer) {
-        // ULTRA-FAST DMA PATH - Direct full-screen transfer
-        Serial.println("⚡ Using DMA ultra-fast path...");
-        
+        // DMA path - read and transfer in chunks
         size_t totalBytesRead = 0;
         size_t fixedImageSize = static_cast<size_t>(FIXED_IMAGE_SIZE);
         size_t bytesToRead = min(dmaBufferSize, fixedImageSize);
-        
+
         while (totalBytesRead < fixedImageSize) {
             size_t chunkSize = min(bytesToRead, fixedImageSize - totalBytesRead);
             size_t bytesRead = imageFile.read(dmaBuffer, chunkSize);
-            
             if (bytesRead == 0) break;
-            
-            // Direct DMA transfer to LCD - no calculations needed!
             lcd->drawBitmap(0, 0, FIXED_IMAGE_WIDTH, FIXED_IMAGE_HEIGHT, dmaBuffer);
-            
             totalBytesRead += bytesRead;
         }
-        
-        unsigned long elapsedTime = millis() - startTime;
-        Serial.printf("✅ DMA ULTRA-FAST: %d bytes in %lu ms (%.2f MB/s)\n", 
-                     FIXED_IMAGE_SIZE, elapsedTime, 
-                     (FIXED_IMAGE_SIZE / 1024.0 / 1024.0) / (elapsedTime / 1000.0));
-        
     } else {
-        // Fallback CPU path
-        Serial.println("⚠️ DMA not available, using CPU fallback...");
-        
+        // CPU fallback - minimal logging
         uint8_t* buffer = (uint8_t*)malloc(4096);
         if (!buffer) {
-            Serial.println("❌ Cannot allocate CPU buffer");
+            DMA_ERR("[DMA] ERROR: cannot allocate CPU buffer");
             imageFile.close();
             return false;
         }
-        
+
         size_t totalBytesRead = 0;
         while (totalBytesRead < static_cast<size_t>(FIXED_IMAGE_SIZE)) {
             size_t bytesRead = imageFile.read(buffer, 4096);
             if (bytesRead == 0) break;
-            
-            // CPU transfer
             lcd->drawBitmap(0, 0, FIXED_IMAGE_WIDTH, FIXED_IMAGE_HEIGHT, buffer);
             totalBytesRead += bytesRead;
         }
-        
+
         free(buffer);
-        unsigned long elapsedTime = millis() - startTime;
-        Serial.printf("✅ CPU fallback: %d bytes in %lu ms\n", FIXED_IMAGE_SIZE, elapsedTime);
     }
     
     imageFile.close();
@@ -309,15 +297,15 @@ void DMAImageManager::disableDMA() {
 }
 
 bool DMAImageManager::displayPNGFromSD(const char* filepath) {
-    Serial.printf("PNG display not implemented yet for: %s\n", filepath);
-    Serial.println("Please convert to RAW RGB565 format for DMA acceleration");
+    DMA_ERR("PNG display not implemented yet for: %s", filepath);
+    DMA_LOG("Please convert to RAW RGB565 format for DMA acceleration");
     return false;
 }
 
 void DMAImageManager::runImageTest() {
-    Serial.println("=== DMA Image Manager Test ===");
-    Serial.printf("DMA Enabled: %s\n", dmaEnabled ? "YES" : "NO");
-    Serial.printf("Buffer Size: %zu bytes\n", dmaBufferSize);
-    Serial.printf("Max Chunk: %zu bytes\n", maxChunkSize);
-    Serial.println("Test completed");
+    DMA_LOG("=== DMA Image Manager Test ===");
+    DMA_LOG("DMA Enabled: %s", dmaEnabled ? "YES" : "NO");
+    DMA_LOG("Buffer Size: %zu bytes", dmaBufferSize);
+    DMA_LOG("Max Chunk: %zu bytes", maxChunkSize);
+    DMA_LOG("Test completed");
 }

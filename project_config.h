@@ -10,6 +10,8 @@
 #define DEBUG_ENABLED 1
 #define DEBUG_SD_OPERATIONS 1
 #define DEBUG_LCD_OPERATIONS 1
+// DMA logging: set to 1 to enable verbose DMA logs, 0 to disable
+#define DMA_VERBOSE_LOGGING 0
 
 // System Configuration
 #define SYSTEM_STATUS_INTERVAL_MS 10000

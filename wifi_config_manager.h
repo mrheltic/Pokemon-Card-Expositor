@@ -26,8 +26,8 @@ struct SlideshowConfig {
     bool loop;
     uint8_t brightness;
     String imageFilter;        // File extension filter (e.g., ".raw")
-    uint32_t transitionMs;
     bool autoStart;
+    bool disableBrightness;    // when true, keep display off for slideshow
     String scalingMode;        // fit, fill, center, stretch
     uint16_t rotationAngle;    // 0, 90, 180, 270
 };
