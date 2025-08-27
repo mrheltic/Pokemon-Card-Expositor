@@ -19,8 +19,8 @@ void setup() {
     systemReady = systemManager.initializeSystem();
     
     if (systemReady) {
-        // Display Pokemon image immediately
-        systemManager.displayImage(DEFAULT_IMAGE_PATH);
+        // Display first image from browser
+        systemManager.displayCurrentImage();
     }
 }
 
@@ -37,7 +37,9 @@ void loop() {
 void printAvailableCommands() {
     Serial.println("\nAvailable commands:");
     Serial.println("  'show' - Display Pokemon image (rotated full-screen)");
-    Serial.println("  'show-normal' - Display normal centered image");
+    Serial.println("  'next' - Next image");
+    Serial.println("  'prev' - Previous image");
+    Serial.println("  'current' - Show current image");
     Serial.println("  'clear' - Clear screen");
     Serial.println("  'list' - List images on SD card");
     Serial.println("  'test' - Run system tests");
@@ -78,6 +80,53 @@ void executeCommand(const String& command) {
         systemManager.displayImage(ORIGINAL_PNG_PATH);
     }
     
+    // Navigation commands
+    else if (command == "next") {
+        systemManager.nextImage();
+    }
+    else if (command == "prev" || command == "previous") {
+        systemManager.previousImage();
+    }
+    else if (command == "current") {
+        systemManager.displayCurrentImage();
+    }
+    
+    // Brightness commands
+    else if (command == "bright+" || command == "brightness+") {
+        systemManager.increaseBrightness();
+    }
+    else if (command == "bright-" || command == "brightness-") {
+        systemManager.decreaseBrightness();
+    }
+    else if (command == "bright low" || command == "brightness low") {
+        systemManager.setBrightnessLow();
+    }
+    else if (command == "bright med" || command == "bright medium" || command == "brightness medium") {
+        systemManager.setBrightnessMedium();
+    }
+    else if (command == "bright high" || command == "brightness high") {
+        systemManager.setBrightnessHigh();
+    }
+    else if (command == "bright max" || command == "brightness max") {
+        systemManager.setBrightnessMax();
+    }
+    else if (command == "bright night" || command == "brightness night") {
+        systemManager.setBrightnessNight();
+    }
+    else if (command.startsWith("bright ") || command.startsWith("brightness ")) {
+        // Extract number from "bright 50" or "brightness 50"
+        int spaceIndex = command.indexOf(' ');
+        if (spaceIndex > 0) {
+            String numberStr = command.substring(spaceIndex + 1);
+            int brightness = numberStr.toInt();
+            if (brightness >= 0 && brightness <= 100) {
+                systemManager.setBrightness(brightness);
+            } else {
+                Serial.println("❌ Brightness must be 0-100%");
+            }
+        }
+    }
+    
     // System commands
     else if (command == "clear") {
         lcdManager.clearScreen();
@@ -86,6 +135,9 @@ void executeCommand(const String& command) {
         clearTopArea();
     }
     else if (command == "list") {
+        systemManager.listImages();
+    }
+    else if (command == "images") {
         systemManager.listImages();
     }
     
@@ -140,6 +192,22 @@ void clearTopArea() {
 
 void printFullHelp() {
     Serial.println("=== Pokemon Expositor Commands ===");
+    Serial.println("IMAGE NAVIGATION:");
+    Serial.println("  next         - Next image");
+    Serial.println("  prev         - Previous image");
+    Serial.println("  current      - Show current image");
+    Serial.println("  list/images  - List all images");
+    Serial.println();
+    Serial.println("BRIGHTNESS CONTROL:");
+    Serial.println("  bright+      - Increase brightness (+10%)");
+    Serial.println("  bright-      - Decrease brightness (-10%)");
+    Serial.println("  bright low   - Low brightness (25%)");
+    Serial.println("  bright med   - Medium brightness (50%)");
+    Serial.println("  bright high  - High brightness (75%)");
+    Serial.println("  bright max   - Maximum brightness (100%)");
+    Serial.println("  bright night - Night mode (10%)");
+    Serial.println("  bright 50    - Set specific brightness (0-100%)");
+    Serial.println();
     Serial.println("IMAGE DISPLAY:");
     Serial.println("  show         - Display rotated full-screen Pokemon");
     Serial.println("  show-normal  - Display normal centered Pokemon");
@@ -148,7 +216,6 @@ void printFullHelp() {
     Serial.println("SYSTEM CONTROL:");
     Serial.println("  clear        - Clear screen");
     Serial.println("  clear-top    - Clear top area (fix glitches)");
-    Serial.println("  list         - List images on SD card");
     Serial.println("  status       - Show system status");
     Serial.println("  restart      - Restart system");
     Serial.println();

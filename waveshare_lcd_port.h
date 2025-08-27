@@ -103,7 +103,7 @@ namespace esp_panel {
 /////////////////////// Please update the following configuration according to your test ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define EXAMPLE_LCD_ENABLE_CREATE_WITH_CONFIG   (0)
-#define EXAMPLE_LCD_ENABLE_PRINT_FPS            (1)
+#define EXAMPLE_LCD_ENABLE_PRINT_FPS            (0)
 #define EXAMPLE_LCD_ENABLE_DRAW_FINISH_CALLBACK (1)
 
 #define _EXAMPLE_LCD_CLASS(name, ...) LCD_##name(__VA_ARGS__)
