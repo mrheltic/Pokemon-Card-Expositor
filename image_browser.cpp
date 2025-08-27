@@ -12,17 +12,29 @@ ImageBrowser::~ImageBrowser() {
 
 bool ImageBrowser::init() {
     if (initialized) {
+        Serial.println("[ImageBrowser] Already initialized");
         return true;
     }
     
-    if (!SD.begin()) {
+    Serial.println("[ImageBrowser] Initializing...");
+    
+    // SD card is already initialized by SD Manager, just check if it's available
+    if (!SD.exists("/")) {
+        Serial.println("[ImageBrowser] ERROR: SD card not available");
         return false;
     }
     
+    Serial.println("[ImageBrowser] SD card OK, scanning for images...");
     scanSDCard();
-    initialized = true;
     
-    return hasImages();
+    if (hasImages()) {
+        Serial.printf("[ImageBrowser] ✅ Successfully initialized with %d images\n", getImageCount());
+        initialized = true;
+        return true;
+    } else {
+        Serial.println("[ImageBrowser] ❌ No images found - initialization failed");
+        return false;
+    }
 }
 
 void ImageBrowser::deinit() {
@@ -45,23 +57,45 @@ bool ImageBrowser::isImageFile(const String& filename) {
 void ImageBrowser::scanSDCard() {
     imageList.clear();
     
-    File root = SD.open("/");
-    if (!root) {
-        return;
+    // First try to scan /images/ directory
+    File imagesDir = SD.open("/images");
+    File root;
+    
+    if (imagesDir && imagesDir.isDirectory()) {
+        Serial.println("[ImageBrowser] Scanning /images/ directory");
+        root = imagesDir;
+    } else {
+        Serial.println("[ImageBrowser] /images/ directory not found, scanning root directory");
+        root = SD.open("/");
+        if (!root) {
+            Serial.println("[ImageBrowser] ERROR: Cannot open SD card root");
+            return;
+        }
     }
     
     File file = root.openNextFile();
+    int imageCount = 0;
+    
     while (file) {
         if (!file.isDirectory()) {
             String filename = file.name();
             if (isImageFile(filename)) {
-                imageList.push_back("/" + filename);
+                // If scanning /images/, add full path
+                if (imagesDir && imagesDir.isDirectory()) {
+                    imageList.push_back("/images/" + filename);
+                } else {
+                    imageList.push_back("/" + filename);
+                }
+                imageCount++;
+                Serial.printf("[ImageBrowser] Found image: %s\n", filename.c_str());
             }
         }
         file = root.openNextFile();
     }
     
     root.close();
+    
+    Serial.printf("[ImageBrowser] Total images found: %d\n", imageCount);
     
     // Sort the list for consistent order
     std::sort(imageList.begin(), imageList.end());

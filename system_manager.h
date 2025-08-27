@@ -6,10 +6,14 @@
 #include "dma_image_manager.h"
 #include "image_browser.h"
 #include "brightness_manager.h"
+#include "wifi_config_manager.h"
 
 class SystemManager {
 private:
     bool systemInitialized;
+    bool slideshowActive;
+    unsigned long lastSlideshowUpdate;
+    int currentImageIndex;
     
     // Initialization helpers
     bool initializeSD();
@@ -17,6 +21,7 @@ private:
     bool initializeImage();
     bool initializeBrowser();
     bool initializeBrightness();
+    bool initializeWiFi();
 
 public:
     SystemManager();
@@ -50,12 +55,23 @@ public:
     void setBrightnessMax();
     void setBrightnessNight();
     
+    // WiFi and Slideshow control
+    bool startSlideshow();
+    bool stopSlideshow();
+    bool pauseSlideshow();
+    void updateSlideshow();
+    bool isWiFiConnected() const;
+    String getWebInterfaceURL() const;
+    
     // System status
     void printSystemStatus();
     
     // Main loop function
     void update();
 };
+
+// Global instance for web interface callbacks
+extern SystemManager* g_systemManager;
 
 extern SystemManager systemManager;
 
