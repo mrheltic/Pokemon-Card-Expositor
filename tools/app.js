@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchTab = document.getElementById('searchTab');
     const savedListTab = document.getElementById('savedList');
     const themeToggleBtn = document.getElementById('themeToggle');
+    const exportBtn = document.getElementById('exportBtn');
+    const exportSavedBtn = document.getElementById('exportSavedBtn');
+    const addAllBtn = document.getElementById('addAllBtn');
     
     // Modals
     const imageModal = document.getElementById('imageModal');
@@ -46,6 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
     sortBySelect.addEventListener('change', sortResults);
     
     themeToggleBtn.addEventListener('click', toggleTheme);
+    
+    // Export buttons
+    exportBtn.addEventListener('click', () => exportCards(currentResults));
+    exportSavedBtn.addEventListener('click', () => exportCards(savedCardsList));
+    addAllBtn.addEventListener('click', addAllToSaved);
     
     closeModalBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -134,8 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function searchCards(searchTerm, searchType, pokemonType, yearRange) {
-        // Base URL for API
-        const baseUrl = 'https://api.pokemontcg.io/v2/cards';
+        // Build query for server API
         let queryParams = [];
         
         // Build query based on search type and term
@@ -178,11 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Construct the full URL
-        const url = baseUrl + (queryParams.length > 0 ? `?q=${queryParams.join(' ')}` : '');
+        // Construct query string
+        const query = queryParams.join(' ');
         
-        // Make API request
-        const response = await fetch(url);
+        // Make API request to our server
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         
         if (!response.ok) {
             throw new Error(`API request failed: ${response.status}`);
@@ -412,7 +419,74 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsModal.style.display = 'block';
     }
     
+    // Export functionality
+    async function exportCards(cards) {
+        if (!cards || cards.length === 0) {
+            alert('No cards to export');
+            return;
+        }
+        
+        try {
+            // Show loading state
+            const exportButton = event.target;
+            const originalText = exportButton.textContent;
+            exportButton.textContent = 'Exporting...';
+            exportButton.disabled = true;
+            
+            // Send cards to server for processing
+            const response = await fetch('/api/export', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ cards })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Export failed: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            // Show success message
+            alert(`✅ Export successful!\n\n📊 Cards exported: ${result.exportedCards}\n🖼️ Images converted: ${result.convertedImages}\n📁 Files saved to: sample_images/exported/`);
+            
+        } catch (error) {
+            console.error('Export error:', error);
+            alert(`❌ Export failed: ${error.message}`);
+        } finally {
+            // Reset button state
+            const exportButton = event.target;
+            exportButton.textContent = originalText;
+            exportButton.disabled = false;
+        }
+    }
+    
     // Saved cards functionality
+    function addAllToSaved() {
+        if (currentResults.length === 0) {
+            alert('No cards to add');
+            return;
+        }
+        
+        let addedCount = 0;
+        currentResults.forEach(card => {
+            if (!isCardSaved(card.id)) {
+                savedCardsList.push(card);
+                addedCount++;
+            }
+        });
+        
+        if (addedCount > 0) {
+            saveToBrowser();
+            updateSavedCount();
+            renderResults(); // Update UI to show saved indicators
+            alert(`Added ${addedCount} cards to your list`);
+        } else {
+            alert('All cards are already in your list');
+        }
+    }
+    
     function addToSaved(card) {
         if (!isCardSaved(card.id)) {
             savedCardsList.push(card);

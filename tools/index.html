@@ -364,6 +364,7 @@
                     <span id="sortIcon">↑</span>
                 </button>
                 <button id="addAllBtn" class="add-all-btn">Add All to List</button>
+                <button id="exportBtn" class="add-all-btn" style="background-color: #28a745;">Export Cards</button>
             </div>
             
             <div class="loading" id="loading">Searching...</div>
@@ -375,7 +376,10 @@
     <div id="savedList">
         <h2>Saved Cards</h2>
         <div id="savedCards" class="card-grid"></div>
-        <button id="clearSaved" style="width: 100%;">Clear All</button>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button id="exportSavedBtn" style="flex: 1; background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 8px;">Export Saved Cards</button>
+            <button id="clearSaved" style="flex: 1;">Clear All</button>
+        </div>
     </div>
     
     <!-- Modal for high-resolution image -->
