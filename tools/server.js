@@ -13,23 +13,23 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Ensure images directories exist
+// Ensure exported directory exists
 const imagesDir = path.join(__dirname, '..', 'images');
-const downloadedDir = path.join(imagesDir, 'downloaded');
-const convertedDir = path.join(imagesDir, 'converted');
+const exportedDir = path.join(imagesDir, 'downloaded');
 const rawDir = path.join(imagesDir, 'raw');
+const convertedDir = path.join(imagesDir, 'converted');
 
+if (!fs.existsSync(exportedDir)) {
+    fs.mkdirSync(exportedDir, { recursive: true });
+}
 if (!fs.existsSync(imagesDir)) {
     fs.mkdirSync(imagesDir, { recursive: true });
 }
-if (!fs.existsSync(downloadedDir)) {
-    fs.mkdirSync(downloadedDir, { recursive: true });
+if (!fs.existsSync(rawDir)) {
+    fs.mkdirSync(rawDir, { recursive: true });
 }
 if (!fs.existsSync(convertedDir)) {
     fs.mkdirSync(convertedDir, { recursive: true });
-}
-if (!fs.existsSync(rawDir)) {
-    fs.mkdirSync(rawDir, { recursive: true });
 }
 
 // Serve the main HTML file
@@ -78,13 +78,28 @@ app.post('/api/export', async (req, res) => {
                     continue;
                 }
 
-                // Download image
-                const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-                const imageFileName = `${card.id}_${card.name.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
-                const imagePath = path.join(downloadedDir, imageFileName);
+                // Handle local file paths or remote URLs
+                let imagePath;
+                if (imageUrl.startsWith('/home/mrheltic/Documents/PokemonExpositor/')) {
+                    // Local file path - copy to exported directory for processing
+                    if (fs.existsSync(imageUrl)) {
+                        const fileName = path.basename(imageUrl);
+                        imagePath = path.join(exportedDir, fileName);
+                        fs.copyFileSync(imageUrl, imagePath);
+                        console.log(`📁 Copied local file: ${fileName}`);
+                    } else {
+                        console.log(`⚠️  Local file not found: ${imageUrl}`);
+                        continue;
+                    }
+                } else {
+                    // Download image from URL
+                    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+                    const imageFileName = `${card.id}_${card.name.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+                    imagePath = path.join(exportedDir, imageFileName);
 
-                fs.writeFileSync(imagePath, imageResponse.data);
-                console.log(`📥 Downloaded: ${imageFileName}`);
+                    fs.writeFileSync(imagePath, imageResponse.data);
+                    console.log(`📥 Downloaded: ${imageFileName}`);
+                }
 
                 // Convert using Python script
                 const convertedFileName = `${card.id}_${card.name.replace(/[^a-zA-Z0-9]/g, '_')}_converted.png`;
@@ -92,7 +107,19 @@ app.post('/api/export', async (req, res) => {
                 const rawFileName = `${card.id}_${card.name.replace(/[^a-zA-Z0-9]/g, '_')}_1024x600.raw`;
                 const rawPath = path.join(rawDir, rawFileName);
 
-                await convertImage(imagePath, convertedPath, rawPath);
+                // Extract card metadata for professional overlay
+                const cardMetadata = {
+                    id: card.id,
+                    name: card.name,
+                    set: card.set,
+                    year: card.year,
+                    rarity: card.rarity
+                };
+
+                console.log(`🔄 Starting conversion for ${card.name}...`);
+                await convertImage(imagePath, convertedPath, rawPath, cardMetadata);
+                console.log(`✅ Conversion completed for ${card.name}`);
+
                 convertedFiles.push({
                     cardId: card.id,
                     cardName: card.name,
@@ -124,14 +151,25 @@ app.post('/api/export', async (req, res) => {
 });
 
 // Function to convert image using Python script
-function convertImage(inputPath, convertedPath, rawPath) {
+function convertImage(inputPath, convertedPath, rawPath, cardMetadata = null) {
     return new Promise((resolve, reject) => {
-        const pythonProcess = spawn('python3', [
+        console.log(`🐍 Calling Python script: ${inputPath} -> ${rawPath}`);
+
+        const args = [
             path.join(__dirname, 'pokemon_converter.py'),
             inputPath,
             convertedPath,
             rawPath
-        ], {
+        ];
+
+        // Add metadata as JSON string if provided
+        if (cardMetadata) {
+            args.push(JSON.stringify(cardMetadata));
+        }
+
+        console.log(`📋 Python args: ${args.join(' ')}`);
+
+        const pythonProcess = spawn('python3', args, {
             cwd: __dirname
         });
 
@@ -140,13 +178,16 @@ function convertImage(inputPath, convertedPath, rawPath) {
 
         pythonProcess.stdout.on('data', (data) => {
             stdout += data.toString();
+            console.log(`🐍 STDOUT: ${data.toString().trim()}`);
         });
 
         pythonProcess.stderr.on('data', (data) => {
             stderr += data.toString();
+            console.log(`🐍 STDERR: ${data.toString().trim()}`);
         });
 
         pythonProcess.on('close', (code) => {
+            console.log(`🐍 Python process exited with code: ${code}`);
             if (code === 0) {
                 resolve(stdout);
             } else {
@@ -155,6 +196,7 @@ function convertImage(inputPath, convertedPath, rawPath) {
         });
 
         pythonProcess.on('error', (error) => {
+            console.log(`🐍 Python process error: ${error.message}`);
             reject(error);
         });
     });
