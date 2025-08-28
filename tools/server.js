@@ -13,24 +13,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Ensure exported directory exists
+// Directories used by the exporter
 const imagesDir = path.join(__dirname, '..', 'images');
 const exportedDir = path.join(imagesDir, 'downloaded');
 const rawDir = path.join(imagesDir, 'raw');
 const convertedDir = path.join(imagesDir, 'converted');
 
-if (!fs.existsSync(exportedDir)) {
-    fs.mkdirSync(exportedDir, { recursive: true });
+// Small helper to create multiple directories if missing (keeps code concise)
+function ensureDirs(dirs) {
+    dirs.forEach(d => {
+        try {
+            if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+        } catch (err) {
+            console.error('Failed to create directory', d, err && err.message);
+        }
+    });
 }
-if (!fs.existsSync(imagesDir)) {
-    fs.mkdirSync(imagesDir, { recursive: true });
-}
-if (!fs.existsSync(rawDir)) {
-    fs.mkdirSync(rawDir, { recursive: true });
-}
-if (!fs.existsSync(convertedDir)) {
-    fs.mkdirSync(convertedDir, { recursive: true });
-}
+
+ensureDirs([imagesDir, exportedDir, rawDir, convertedDir]);
 
 // Serve the main HTML file
 app.get('/', (req, res) => {
@@ -57,7 +57,7 @@ app.post('/api/export', async (req, res) => {
             return res.status(400).json({ error: 'No cards to export' });
         }
 
-        console.log(`📤 Exporting ${cards.length} cards...`);
+    console.log(`Exporting ${cards.length} cards...`);
 
         // Save cards data to JSON
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -86,7 +86,7 @@ app.post('/api/export', async (req, res) => {
                         const fileName = path.basename(imageUrl);
                         imagePath = path.join(exportedDir, fileName);
                         fs.copyFileSync(imageUrl, imagePath);
-                        console.log(`📁 Copied local file: ${fileName}`);
+                                console.log(`Copied local file: ${fileName}`);
                     } else {
                         console.log(`⚠️  Local file not found: ${imageUrl}`);
                         continue;
@@ -98,7 +98,7 @@ app.post('/api/export', async (req, res) => {
                     imagePath = path.join(exportedDir, imageFileName);
 
                     fs.writeFileSync(imagePath, imageResponse.data);
-                    console.log(`📥 Downloaded: ${imageFileName}`);
+                    console.log(`Downloaded: ${imageFileName}`);
                 }
 
                 // Convert using Python script
@@ -116,9 +116,9 @@ app.post('/api/export', async (req, res) => {
                     rarity: card.rarity
                 };
 
-                console.log(`🔄 Starting conversion for ${card.name}...`);
+                console.log(`Starting conversion for ${card.name}...`);
                 await convertImage(imagePath, convertedPath, rawPath, cardMetadata);
-                console.log(`✅ Conversion completed for ${card.name}`);
+                console.log(`Conversion completed for ${card.name}`);
 
                 convertedFiles.push({
                     cardId: card.id,
@@ -129,7 +129,7 @@ app.post('/api/export', async (req, res) => {
                 });
 
             } catch (error) {
-                console.error(`❌ Error processing card ${card.name}:`, error.message);
+                console.error(`Error processing card ${card.name}:`, error && error.message);
             }
         }
 
@@ -141,7 +141,7 @@ app.post('/api/export', async (req, res) => {
             convertedFiles: convertedFiles
         };
 
-        console.log(`✅ Export complete! Processed ${convertedFiles.length}/${cards.length} cards`);
+    console.log(`Export complete! Processed ${convertedFiles.length}/${cards.length} cards`);
         res.json(result);
 
     } catch (error) {

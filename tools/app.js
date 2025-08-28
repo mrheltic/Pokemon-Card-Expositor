@@ -1,27 +1,51 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements
-    const searchButton = document.getElementById('searchButton');
-    const searchTermInput = document.getElementById('searchTerm');
-    const searchTypeSelect = document.getElementById('searchType');
-    const pokemonTypeSelect = document.getElementById('pokemonType');
-    const yearRangeSelect = document.getElementById('yearRange');
-    const sortBySelect = document.getElementById('sortBy');
-    const sortDirectionBtn = document.getElementById('sortDirection');
-    const sortIcon = document.getElementById('sortIcon');
-    const resultsDiv = document.getElementById('results');
-    const resultsSection = document.getElementById('resultsSection');
-    const resultsCount = document.getElementById('resultsCount');
-    const loadingDiv = document.getElementById('loading');
-    const savedCards = document.getElementById('savedCards');
-    const savedCountSpan = document.getElementById('savedCount');
-    const clearSavedBtn = document.getElementById('clearSaved');
+    // Small helper to reduce repetition when getting DOM elements
+    const $ = id => document.getElementById(id);
+    // DOM Elements (compact mapping)
+    const {
+        searchButton,
+        searchTerm: searchTermInput,
+        searchType: searchTypeSelect,
+        pokemonType: pokemonTypeSelect,
+        yearRange: yearRangeSelect,
+        sortBy: sortBySelect,
+        sortDirection: sortDirectionBtn,
+        sortIcon,
+        results: resultsDiv,
+        resultsSection,
+        resultsCount,
+        loading: loadingDiv,
+        savedCards,
+        savedCount: savedCountSpan,
+        clearSaved: clearSavedBtn,
+        themeToggle: themeToggleBtn,
+        exportBtn,
+        exportSavedBtn,
+        addAllBtn
+    } = {
+        searchButton: $('searchButton'),
+        searchTerm: $('searchTerm'),
+        searchType: $('searchType'),
+        pokemonType: $('pokemonType'),
+        yearRange: $('yearRange'),
+        sortBy: $('sortBy'),
+        sortDirection: $('sortDirection'),
+        sortIcon: $('sortIcon'),
+        results: $('results'),
+        resultsSection: $('resultsSection'),
+        resultsCount: $('resultsCount'),
+        loading: $('loading'),
+        savedCards: $('savedCards'),
+        savedCount: $('savedCount'),
+        clearSaved: $('clearSaved'),
+        themeToggle: $('themeToggle'),
+        exportBtn: $('exportBtn'),
+        exportSavedBtn: $('exportSavedBtn'),
+        addAllBtn: $('addAllBtn')
+    };
     const tabButtons = document.querySelectorAll('.tab-btn');
-    const searchTab = document.getElementById('searchTab');
-    const savedListTab = document.getElementById('savedList');
-    const themeToggleBtn = document.getElementById('themeToggle');
-    const exportBtn = document.getElementById('exportBtn');
-    const exportSavedBtn = document.getElementById('exportSavedBtn');
-    const addAllBtn = document.getElementById('addAllBtn');
+    const searchTab = $('searchTab');
+    const savedListTab = $('savedList');
     
     // Modals
     const imageModal = document.getElementById('imageModal');
