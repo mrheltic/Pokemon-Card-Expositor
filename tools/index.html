@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Card Search</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiNlZjQ0NDQiIHN0cm9rZT0iIzIyMjIyMiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjYiIGZpbGw9IndoaXRlIiBzdHJva2U9IiMyMjIyMjIiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K">
+    <style>
+        /* Base styles */
+        :root {
+            --bg-color: #f9f9f9;
+            --text-color: #222;
+            --card-bg: #fff;
+            --card-border: #ddd;
+            --header-bg: #4a6daa;
+            --header-text: white;
+            --accent-color: #4a6daa;
+            --tab-active: #e6e6e6;
+            --tab-inactive: #f1f1f1;
+            --input-border: #ccc;
+            --modal-bg: rgba(0, 0, 0, 0.85);
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #222;
+            --text-color: #eee;
+            --card-bg: #333;
+            --card-border: #444;
+            --header-bg: #2c4170;
+            --header-text: #f0f0f0;
+            --accent-color: #5e84cc;
+            --tab-active: #444;
+            --tab-inactive: #333;
+            --input-border: #555;
+            --modal-bg: rgba(0, 0, 0, 0.9);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            padding: 10px;
+            max-width: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        h1, h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+        
+        /* Header with theme toggle */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .theme-toggle {
+            background-color: transparent;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        /* Search container */
+        .search-container {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .search-criteria {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .search-row {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
+        select, input, button {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--input-border);
+            font-size: 14px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            min-height: 36px;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        /* Results grid */
+        .loading {
+            text-align: center;
+            display: none;
+            margin: 10px 0;
+            color: var(--text-color);
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .card-mini {
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 6px;
+            position: relative;
+            background-color: var(--card-bg);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .card-mini:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-mini img {
+            width: 100%;
+            border-radius: 4px;
+            display: block;
+        }
+        
+        .card-mini h3 {
+            font-size: 13px;
+            margin: 5px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-color);
+        }
+        
+        .card-mini p {
+            font-size: 11px;
+            margin: 2px 0;
+            color: var(--text-color);
+        }
+        
+        /* Saved card indicator */
+        .card-mini .saved-indicator {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 24px;
+            height: 24px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0 6px 0 6px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        /* Sorting controls */
+        .sort-controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        /* Tab navigation */
+        .tab-nav {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            background-color: var(--tab-inactive);
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-color);
+        }
+        
+        .tab-btn.active {
+            border-bottom: 2px solid var(--accent-color);
+            background-color: var(--tab-active);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-bg);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 90%;
+            max-height: 80vh;
+            object-fit: contain;
+            margin-top: 10vh;
+        }
+        
+        .card-details {
+            background: var(--card-bg);
+            width: 90%;
+            margin: 10vh auto;
+            padding: 15px;
+            border-radius: 6px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: var(--text-color);
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: #fff;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* List section */
+        #savedList {
+            display: none;
+        }
+        
+        .empty-message {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-color);
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        table tr td {
+            padding: 4px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .add-all-btn {
+            margin-left: auto; /* Spinge il bottone a destra */
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .add-all-btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>Pokémon Card Search</h1>
+        <button id="themeToggle" class="theme-toggle">☀️</button>
+    </div>
+    
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="search">Search</button>
+        <button class="tab-btn" data-tab="saved">My List <span id="savedCount">(0)</span></button>
+    </div>
+    
+    <div id="searchTab">
+        <div class="search-container">
+            <div class="search-criteria">
+                <div class="search-row">
+                    <select id="searchType">
+                        <option value="name">Card Name</option>
+                        <option value="pokemon">Pokémon Name</option>
+                        <option value="artist">Artist</option>
+                        <option value="set">Set Name</option>
+                        <option value="rarity">Rarity</option>
+                    </select>
+                    <input type="text" id="searchTerm" placeholder="Enter search term">
+                </div>
+                
+                <div class="search-row">
+                    <select id="pokemonType">
+                        <option value="">Any Type</option>
+                        <option value="Colorless">Colorless</option>
+                        <option value="Darkness">Darkness</option>
+                        <option value="Dragon">Dragon</option>
+                        <option value="Fairy">Fairy</option>
+                        <option value="Fighting">Fighting</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Grass">Grass</option>
+                        <option value="Lightning">Lightning</option>
+                        <option value="Metal">Metal</option>
+                        <option value="Psychic">Psychic</option>
+                        <option value="Water">Water</option>
+                    </select>
+                    <select id="yearRange">
+                        <option value="">Any Year</option>
+                        <option value="2023-">2023+</option>
+                        <option value="2020-2022">2020-2022</option>
+                        <option value="2015-2019">2015-2019</option>
+                        <option value="2010-2014">2010-2014</option>
+                        <option value="-2009">Before 2010</option>
+                    </select>
+                </div>
+                
+                <button id="searchButton">Search Cards</button>
+            </div>
+        </div>
+        
+        <div id="resultsSection" style="display: none;">
+            <div class="sort-controls">
+                <label for="sortBy">Sort by:</label>
+                <select id="sortBy">
+                    <option value="name">Name</option>
+                    <option value="price">Price</option>
+                    <option value="year">Year</option>
+                </select>
+                <button id="sortDirection" data-direction="asc">
+                    <span id="sortIcon">↑</span>
+                </button>
+                <button id="addAllBtn" class="add-all-btn">Add All to List</button>
+            </div>
+            
+            <div class="loading" id="loading">Searching...</div>
+            <div id="resultsCount"></div>
+            <div id="results" class="card-grid"></div>
+        </div>
+    </div>
+    
+    <div id="savedList">
+        <h2>Saved Cards</h2>
+        <div id="savedCards" class="card-grid"></div>
+        <button id="clearSaved" style="width: 100%;">Clear All</button>
+    </div>
+    
+    <!-- Modal for high-resolution image -->
+    <div id="imageModal" class="modal">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="highResImage">
+    </div>
+    
+    <!-- Modal for card details -->
+    <div id="detailsModal" class="modal">
+        <span class="close-modal">&times;</span>
+        <div class="card-details" id="cardDetails"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
