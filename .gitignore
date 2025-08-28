@@ -3,3 +3,4 @@
 /tools/node_modules
 *.json
 /tools/__pycache__
+/images
