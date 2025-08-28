@@ -75,8 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
     themeToggleBtn.addEventListener('click', toggleTheme);
     
     // Export buttons
-    exportBtn.addEventListener('click', () => exportCards(currentResults));
-    exportSavedBtn.addEventListener('click', () => exportCards(savedCardsList));
+    exportBtn.addEventListener('click', (e) => exportCards(currentResults, e.target));
+    exportSavedBtn.addEventListener('click', (e) => exportCards(savedCardsList, e.target));
     addAllBtn.addEventListener('click', addAllToSaved);
     
     closeModalBtns.forEach(btn => {
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Export functionality
-    async function exportCards(cards) {
+    async function exportCards(cards, exportButton) {
         if (!cards || cards.length === 0) {
             alert('No cards to export');
             return;
@@ -452,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             // Show loading state
-            const exportButton = event.target;
             const originalText = exportButton.textContent;
             exportButton.textContent = 'Exporting...';
             exportButton.disabled = true;
@@ -480,7 +479,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`❌ Export failed: ${error.message}`);
         } finally {
             // Reset button state
-            const exportButton = event.target;
             exportButton.textContent = originalText;
             exportButton.disabled = false;
         }
