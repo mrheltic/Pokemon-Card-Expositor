@@ -449,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             
             // Show success message
-            alert(`✅ Export successful!\n\n📊 Cards exported: ${result.exportedCards}\n🖼️ Images converted: ${result.convertedImages}\n📁 Files saved to: sample_images/exported/`);
+            alert(`✅ Export successful!\n\n📊 Cards exported: ${result.exportedCards}\n🖼️ Images converted: ${result.convertedImages}\n📁 Files saved to: images/ (downloaded/, converted/, raw/)`);
             
         } catch (error) {
             console.error('Export error:', error);

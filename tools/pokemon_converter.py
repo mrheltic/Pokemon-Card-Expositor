@@ -27,9 +27,10 @@ def rgb888_to_rgb565(r, g, b):
     rgb565 = (r5 << 11) | (g6 << 5) | b5
     return struct.pack('<H', rgb565)  # Little endian uint16
 
-def convert_image_to_raw(input_path, output_path=None):
+def convert_image_to_raw(input_path, output_png_path=None, output_raw_path=None):
     """
-    Convert image to 1024x600 RAW RGB565 with rotation and letterboxing
+    Convert 733x1024 Pokemon card image to 1024x600 RAW RGB565 format.
+    Rotates 90° CCW, maintains aspect ratio, places at bottom with double left margin.
     """
     try:
         print(f"🔄 Processing: {input_path}")
@@ -48,28 +49,34 @@ def convert_image_to_raw(input_path, output_path=None):
             # Calculate scaling to fit within target size while maintaining aspect ratio
             img_width, img_height = img_rotated.size
             scale_factor = min(TARGET_WIDTH / img_width, TARGET_HEIGHT / img_height)
-            
+
             # Calculate new size
             new_width = int(img_width * scale_factor)
             new_height = int(img_height * scale_factor)
-            
+
             # Resize image maintaining aspect ratio
             img_resized = img_rotated.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
+
             # Create black background at target resolution
             final_img = Image.new('RGB', (TARGET_WIDTH, TARGET_HEIGHT), (0, 0, 0))
-            
-            # Calculate position to center the image
-            x_offset = (TARGET_WIDTH - new_width) // 2
-            y_offset = (TARGET_HEIGHT - new_height) // 2
-            
+
+            # Calculate position: double left margin, image positioned to the right
+            left_margin = (TARGET_WIDTH - new_width) // 2  # Original margin was 93px
+            x_offset = left_margin * 2  # Double the left margin (186px)
+            y_offset = TARGET_HEIGHT - new_height  # Place at bottom
+
             # Paste resized image onto black background
             final_img.paste(img_resized, (x_offset, y_offset))
             
-            # Determine output path
-            if output_path is None:
+            # Save PNG version if requested
+            if output_png_path:
+                final_img.save(output_png_path, 'PNG')
+                print(f"   ✅ Saved PNG: {output_png_path}")
+            
+            # Determine RAW output path
+            if output_raw_path is None:
                 name, _ = os.path.splitext(input_path)
-                output_path = f"{name}_1024x600.raw"
+                output_raw_path = f"{name}_1024x600.raw"
             
             # Convert to RAW RGB565 format
             print(f"   🔄 Converting to RGB565...")
@@ -84,17 +91,18 @@ def convert_image_to_raw(input_path, output_path=None):
                     raw_data.extend(rgb565_bytes)
             
             # Write RAW file
-            with open(output_path, 'wb') as f:
+            with open(output_raw_path, 'wb') as f:
                 f.write(raw_data)
             
             expected_size = TARGET_WIDTH * TARGET_HEIGHT * BYTES_PER_PIXEL
             actual_size = len(raw_data)
             
-            print(f"   ✅ Saved: {output_path}")
+            print(f"   ✅ Saved RAW: {output_raw_path}")
             print(f"   📐 Scale: {scale_factor:.2f}x, Position: ({x_offset}, {y_offset})")
+            print(f"   📏 Final size: {new_width}×{new_height} on {TARGET_WIDTH}×{TARGET_HEIGHT}")
             print(f"   💾 Size: {actual_size:,} bytes (expected: {expected_size:,})")
             
-            return output_path
+            return output_raw_path
             
     except Exception as e:
         print(f"   ❌ Error: {e}")
@@ -144,23 +152,38 @@ def main():
     
     if len(sys.argv) < 2:
         print("📋 Usage:")
-        print("  python3 pokemon_converter.py <files...>")
+        print("  python3 pokemon_converter.py <input_file> [output_png] [output_raw]")
         print()
         print("📁 Examples:")
         print("  python3 pokemon_converter.py image.png")
+        print("  python3 pokemon_converter.py image.png output.png output.raw")
         print("  python3 pokemon_converter.py *.jpg *.png")
         print("  python3 pokemon_converter.py /path/to/images/")
-        print("  python3 pokemon_converter.py card1.png card2.jpg folder/")
         print()
         print("🎯 Features:")
+        print("  • Optimized for 733x1024 Pokemon card images")
         print("  • Rotates images 90° left for vertical display")
-        print("  • Resizes to 1024x600 maintaining aspect ratio")
-        print("  • Adds black bars on left/right sides")
+        print("  • Maintains aspect ratio with double left margin")
+        print("  • Places image at bottom with wide left black bar")
         print("  • Outputs RAW RGB565 format for DMA")
         print("  • Optimized for Pokemon card display")
         return
     
-    # Process all provided files/patterns
+    # Check if called with specific output paths
+    if len(sys.argv) == 4:
+        # Called from server with specific paths
+        input_file = sys.argv[1]
+        output_png = sys.argv[2]
+        output_raw = sys.argv[3]
+        
+        result = convert_image_to_raw(input_file, output_png, output_raw)
+        if result:
+            print(f"\n✅ Conversion complete!")
+        else:
+            print(f"\n❌ Conversion failed!")
+        return
+    
+    # Original batch processing mode
     files_processed, files_failed = process_files(sys.argv[1:])
     
     # Summary

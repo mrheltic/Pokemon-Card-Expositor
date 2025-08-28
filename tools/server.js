@@ -13,16 +13,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Ensure exported directory exists
-const exportedDir = path.join(__dirname, '..', 'sample_images', 'exported');
-const imagesDir = path.join(exportedDir, 'images');
-const rawDir = path.join(exportedDir, 'raw');
+// Ensure images directories exist
+const imagesDir = path.join(__dirname, '..', 'images');
+const downloadedDir = path.join(imagesDir, 'downloaded');
+const convertedDir = path.join(imagesDir, 'converted');
+const rawDir = path.join(imagesDir, 'raw');
 
-if (!fs.existsSync(exportedDir)) {
-    fs.mkdirSync(exportedDir, { recursive: true });
-}
 if (!fs.existsSync(imagesDir)) {
     fs.mkdirSync(imagesDir, { recursive: true });
+}
+if (!fs.existsSync(downloadedDir)) {
+    fs.mkdirSync(downloadedDir, { recursive: true });
+}
+if (!fs.existsSync(convertedDir)) {
+    fs.mkdirSync(convertedDir, { recursive: true });
 }
 if (!fs.existsSync(rawDir)) {
     fs.mkdirSync(rawDir, { recursive: true });
@@ -58,7 +62,7 @@ app.post('/api/export', async (req, res) => {
         // Save cards data to JSON
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const jsonFileName = `exported_cards_${timestamp}.json`;
-        const jsonPath = path.join(exportedDir, jsonFileName);
+        const jsonPath = path.join(imagesDir, jsonFileName);
 
         fs.writeFileSync(jsonPath, JSON.stringify(cards, null, 2));
         console.log(`💾 Saved card data to: ${jsonFileName}`);
@@ -77,20 +81,23 @@ app.post('/api/export', async (req, res) => {
                 // Download image
                 const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
                 const imageFileName = `${card.id}_${card.name.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
-                const imagePath = path.join(imagesDir, imageFileName);
+                const imagePath = path.join(downloadedDir, imageFileName);
 
                 fs.writeFileSync(imagePath, imageResponse.data);
                 console.log(`📥 Downloaded: ${imageFileName}`);
 
                 // Convert using Python script
+                const convertedFileName = `${card.id}_${card.name.replace(/[^a-zA-Z0-9]/g, '_')}_converted.png`;
+                const convertedPath = path.join(convertedDir, convertedFileName);
                 const rawFileName = `${card.id}_${card.name.replace(/[^a-zA-Z0-9]/g, '_')}_1024x600.raw`;
                 const rawPath = path.join(rawDir, rawFileName);
 
-                await convertImage(imagePath, rawPath);
+                await convertImage(imagePath, convertedPath, rawPath);
                 convertedFiles.push({
                     cardId: card.id,
                     cardName: card.name,
-                    imagePath: imagePath,
+                    downloadedPath: imagePath,
+                    convertedPath: convertedPath,
                     rawPath: rawPath
                 });
 
@@ -117,11 +124,13 @@ app.post('/api/export', async (req, res) => {
 });
 
 // Function to convert image using Python script
-function convertImage(inputPath, outputPath) {
+function convertImage(inputPath, convertedPath, rawPath) {
     return new Promise((resolve, reject) => {
         const pythonProcess = spawn('python3', [
             path.join(__dirname, 'pokemon_converter.py'),
-            inputPath
+            inputPath,
+            convertedPath,
+            rawPath
         ], {
             cwd: __dirname
         });
@@ -139,11 +148,6 @@ function convertImage(inputPath, outputPath) {
 
         pythonProcess.on('close', (code) => {
             if (code === 0) {
-                // Move the generated .raw file to the desired location
-                const generatedRawPath = inputPath.replace(/\.[^.]+$/, '_1024x600.raw');
-                if (fs.existsSync(generatedRawPath)) {
-                    fs.renameSync(generatedRawPath, outputPath);
-                }
                 resolve(stdout);
             } else {
                 reject(new Error(`Python script failed: ${stderr}`));
@@ -159,5 +163,5 @@ function convertImage(inputPath, outputPath) {
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Pokemon Card Exporter running at http://localhost:${PORT}`);
-    console.log(`📁 Exported files will be saved to: ${exportedDir}`);
+    console.log(`📁 Exported files will be saved to: ${imagesDir}`);
 });

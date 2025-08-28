@@ -159,3 +159,4 @@ temp_*.raw
 platformio.ini.backup
 .vscode/settings.json
 /sample_images
+/images
