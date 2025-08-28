@@ -2,7 +2,7 @@
 """
 Pokemon Expositor Image Converter
 All-in-one tool for converting images to 1024x600 RAW RGB565 format
-Optimized for Pokemon card display with vertical orientation
+Agnostic approach: works with any image dimensions, auto-calculates margins
 """
 
 import os
@@ -29,28 +29,36 @@ def rgb888_to_rgb565(r, g, b):
 
 def convert_image_to_raw(input_path, output_png_path=None, output_raw_path=None):
     """
-    Convert 733x1024 Pokemon card image to 1024x600 RAW RGB565 format.
-    Rotates 90° CCW, maintains aspect ratio, places at bottom with double left margin.
+    Convert any image to 1024x600 RAW RGB565 format with automatic margin calculation.
+    Agnostic approach: maintains aspect ratio and auto-calculates margins for perfect fit.
     """
     try:
         print(f"🔄 Processing: {input_path}")
-        
+
         # Open and load image
         with Image.open(input_path) as img:
             # Convert to RGB if needed
             if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
-            
+
             # Rotate 90 degrees counterclockwise for vertical display
             img_rotated = img.rotate(90, expand=True)
-            
-            print(f"   Original: {img.size} → Rotated: {img_rotated.size}")
-            
-            # Calculate scaling to fit within target size while maintaining aspect ratio
-            img_width, img_height = img_rotated.size
-            scale_factor = min(TARGET_WIDTH / img_width, TARGET_HEIGHT / img_height)
 
-            # Calculate new size
+            print(f"   Original: {img.size} → Rotated: {img_rotated.size}")
+
+            # Get rotated dimensions
+            img_width, img_height = img_rotated.size
+
+            # Calculate aspect ratio
+            aspect_ratio = img_width / img_height
+
+            # Calculate scaling to fit within target while maintaining aspect ratio
+            # We want to fit the entire image, so scale to the smaller constraining dimension
+            scale_x = TARGET_WIDTH / img_width
+            scale_y = TARGET_HEIGHT / img_height
+            scale_factor = min(scale_x, scale_y)
+
+            # Apply scaling
             new_width = int(img_width * scale_factor)
             new_height = int(img_height * scale_factor)
 
@@ -60,10 +68,14 @@ def convert_image_to_raw(input_path, output_png_path=None, output_raw_path=None)
             # Create black background at target resolution
             final_img = Image.new('RGB', (TARGET_WIDTH, TARGET_HEIGHT), (0, 0, 0))
 
-            # Calculate position: double left margin, image positioned to the right
-            left_margin = (TARGET_WIDTH - new_width) // 2  # Original margin was 93px
-            x_offset = left_margin * 2  # Double the left margin (186px)
-            y_offset = TARGET_HEIGHT - new_height  # Place at bottom
+            # Auto-calculate margins for perfect centering
+            # Center horizontally and vertically
+            x_margin = (TARGET_WIDTH - new_width) // 2
+            y_margin = (TARGET_HEIGHT - new_height) // 2
+
+            # Ensure margins are not negative (shouldn't happen with our scaling)
+            x_offset = max(0, x_margin)
+            y_offset = max(0, y_margin)
 
             # Paste resized image onto black background
             final_img.paste(img_resized, (x_offset, y_offset))
@@ -98,9 +110,12 @@ def convert_image_to_raw(input_path, output_png_path=None, output_raw_path=None)
             actual_size = len(raw_data)
             
             print(f"   ✅ Saved RAW: {output_raw_path}")
-            print(f"   📐 Scale: {scale_factor:.2f}x, Position: ({x_offset}, {y_offset})")
-            print(f"   📏 Final size: {new_width}×{new_height} on {TARGET_WIDTH}×{TARGET_HEIGHT}")
+            print(f"   📐 Scale: {scale_factor:.2f}x, Aspect: {aspect_ratio:.2f}")
+            print(f"   📏 Final: {new_width}×{new_height} → {TARGET_WIDTH}×{TARGET_HEIGHT}")
+            print(f"   🎯 Position: ({x_offset}, {y_offset}), Margins: H{x_margin}px, V{y_margin}px")
             print(f"   💾 Size: {actual_size:,} bytes (expected: {expected_size:,})")
+
+            return output_raw_path
             
             return output_raw_path
             
@@ -161,12 +176,13 @@ def main():
         print("  python3 pokemon_converter.py /path/to/images/")
         print()
         print("🎯 Features:")
-        print("  • Optimized for 733x1024 Pokemon card images")
+        print("  • Agnostic image processing - works with any input dimensions")
+        print("  • Automatic margin calculation for perfect centering")
+        print("  • Maintains original aspect ratio")
         print("  • Rotates images 90° left for vertical display")
-        print("  • Maintains aspect ratio with double left margin")
-        print("  • Places image at bottom with wide left black bar")
+        print("  • Scales to fit screen while preserving proportions")
         print("  • Outputs RAW RGB565 format for DMA")
-        print("  • Optimized for Pokemon card display")
+        print("  • Optimized for any display device")
         return
     
     # Check if called with specific output paths
