@@ -1,3 +1,20 @@
+/**
+ * Pokemon Card Expositor - Frontend JavaScript Application
+ * 
+ * This script provides the interactive frontend for the Pokemon card conversion
+ * system. It enables users to search for Pokemon cards, manage collections,
+ * and trigger batch conversions through an intuitive web interface.
+ * 
+ * API Integration:
+ * - GET /api/search - Search Pokemon cards
+ * - POST /api/convert - Convert single card
+ * - POST /api/export - Batch export cards
+ * - GET /api/health - System health check
+ * 
+ * Author: mrheltic
+ * Date: August 2025
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
     // Small helper to reduce repetition when getting DOM elements
     const $ = id => document.getElementById(id);
