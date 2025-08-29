@@ -294,9 +294,12 @@ async function processCardForExport(card) {
         let imagePath;
         
         // Handle different image source types
-        if (card.image && card.image.startsWith('http')) {
-            // Download image from URL
-            const imageResponse = await axios.get(card.image, { 
+        // Prefer high-resolution image for export, fallback to regular image
+        const imageUrl = card.imageHD || card.image;
+        
+        if (imageUrl && imageUrl.startsWith('http')) {
+            // Download image from URL (prefer high-resolution)
+            const imageResponse = await axios.get(imageUrl, { 
                 responseType: 'arraybuffer',
                 timeout: 30000
             });
@@ -305,17 +308,18 @@ async function processCardForExport(card) {
             imagePath = path.join(exportedDir, imageFileName);
             
             fs.writeFileSync(imagePath, imageResponse.data);
-            console.log(`📥 Downloaded: ${imageFileName}`);
+            console.log(`📥 Downloaded high-res: ${imageFileName}`);
             
-        } else if (card.image && card.image.startsWith('/')) {
-            // Handle local file path
-            if (fs.existsSync(card.image)) {
-                const fileName = path.basename(card.image);
+        } else if ((card.imageHD && card.imageHD.startsWith('/')) || (card.image && card.image.startsWith('/'))) {
+            // Handle local file path - prefer high-resolution version
+            const localImagePath = card.imageHD || card.image;
+            if (fs.existsSync(localImagePath)) {
+                const fileName = path.basename(localImagePath);
                 imagePath = path.join(exportedDir, fileName);
-                fs.copyFileSync(card.image, imagePath);
+                fs.copyFileSync(localImagePath, imagePath);
                 console.log(`📋 Copied local file: ${fileName}`);
             } else {
-                throw new Error(`Local file not found: ${card.image}`);
+                throw new Error(`Local file not found: ${localImagePath}`);
             }
         } else {
             // Use card ID for Pokemon TCG API download (handled by Python script)

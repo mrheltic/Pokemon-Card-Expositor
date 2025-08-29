@@ -4,3 +4,6 @@
 *.json
 /tools/__pycache__
 /images
+/.vscode
+/node_modules
+/.vscode
