@@ -88,22 +88,74 @@ app.get('/api/search', async (req, res) => {
         
         console.log(`🔍 Searching Pokemon cards: ${q}`);
         
-        // Query the Pokemon TCG API
-        const response = await axios.get(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}`, {
-            timeout: 10000,
-            headers: {
-                'User-Agent': 'Pokemon-Expositor/1.0'
+        // Query the Pokemon TCG API with increased timeout and retry logic
+        let response;
+        const maxRetries = 3;
+        let lastError;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`📡 API attempt ${attempt}/${maxRetries}`);
+                
+                response = await axios.get(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}`, {
+                    timeout: 30000, // Increased timeout to 30 seconds
+                    headers: {
+                        'User-Agent': 'Pokemon-Expositor/1.0',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                // If we get here, the request succeeded
+                break;
+                
+            } catch (error) {
+                lastError = error;
+                console.log(`⚠️  API attempt ${attempt} failed: ${error.message}`);
+                
+                if (attempt < maxRetries) {
+                    // Wait before retrying (exponential backoff)
+                    const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+                    console.log(`⏳ Waiting ${delay}ms before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
             }
-        });
+        }
+        
+        if (!response) {
+            throw lastError || new Error('All retry attempts failed');
+        }
         
         console.log(`📊 Found ${response.data.data.length} cards`);
         res.json(response.data);
         
     } catch (error) {
         console.error('❌ Search API error:', error.message);
-        res.status(500).json({ 
-            error: 'Failed to search cards',
-            details: error.message 
+        
+        // Provide more specific error messages
+        let errorMessage = 'Failed to search cards';
+        let statusCode = 500;
+        
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            errorMessage = 'Pokemon TCG API timeout - please try again';
+            statusCode = 504;
+        } else if (error.response?.status === 429) {
+            errorMessage = 'Rate limit exceeded - please wait a moment and try again';
+            statusCode = 429;
+        } else if (error.response?.status >= 400 && error.response?.status < 500) {
+            errorMessage = 'Invalid search query format';
+            statusCode = 400;
+        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+            errorMessage = 'Cannot connect to Pokemon TCG API - check internet connection';
+            statusCode = 502;
+        }
+        
+        res.status(statusCode).json({ 
+            error: errorMessage,
+            details: error.message,
+            suggestion: statusCode === 504 ? 'Try a more specific search or wait a moment' : 
+                       statusCode === 429 ? 'Wait a few seconds before searching again' :
+                       statusCode === 502 ? 'Check your internet connection and try again' : 
+                       'Try a different search term'
         });
     }
 });

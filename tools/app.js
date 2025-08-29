@@ -169,14 +169,42 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingDiv.style.display = 'block';
         resultsDiv.innerHTML = '';
         resultsSection.style.display = 'block';
+        resultsCount.textContent = 'Searching...';
         
         try {
             currentResults = await searchCards(searchTerm, searchType, pokemonType, yearRange);
             sortResults();
         } catch (error) {
             console.error('Search error:', error);
-            resultsDiv.innerHTML = `<p class="empty-message">An error occurred: ${error.message}</p>`;
-            resultsCount.textContent = 'Error occurred during search';
+            
+            // Show user-friendly error messages
+            let errorMessage = 'An error occurred while searching';
+            let suggestion = '';
+            
+            if (error.message.includes('timeout') || error.message.includes('504')) {
+                errorMessage = '🕐 Search timed out';
+                suggestion = 'The Pokemon API is slow. Try a more specific search or wait a moment.';
+            } else if (error.message.includes('429')) {
+                errorMessage = '⏳ Too many requests';
+                suggestion = 'Please wait a moment before searching again.';
+            } else if (error.message.includes('502') || error.message.includes('connection')) {
+                errorMessage = '🌐 Connection problem';
+                suggestion = 'Check your internet connection and try again.';
+            } else if (error.message.includes('400')) {
+                errorMessage = '❓ Invalid search';
+                suggestion = 'Try a different search term or filter.';
+            }
+            
+            resultsDiv.innerHTML = `
+                <div class="error-message">
+                    <h3>${errorMessage}</h3>
+                    <p>${suggestion}</p>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Try Again
+                    </button>
+                </div>
+            `;
+            resultsCount.textContent = 'Search failed';
         } finally {
             loadingDiv.style.display = 'none';
         }
@@ -229,61 +257,98 @@ document.addEventListener('DOMContentLoaded', () => {
         // Construct query string
         const query = queryParams.join(' ');
         
-        // Make API request to our server
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        console.log('🔍 Searching with query:', query);
         
-        if (!response.ok) {
-            throw new Error(`API request failed: ${response.status}`);
-        }
+        // Make API request to our server with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 1 minute timeout
         
-        const data = await response.json();
-        
-        // Extract required information from each card
-        return data.data.map(card => {
-            // Extract year from release date (format "YYYY/MM/DD")
-            const year = card.set.releaseDate ? card.set.releaseDate.split('/')[0] : 'N/A';
-            
-            // Get market price
-            let marketPrice = 'N/A';
-            if (card.tcgplayer && card.tcgplayer.prices) {
-                const priceTypes = Object.keys(card.tcgplayer.prices);
-                for (const type of priceTypes) {
-                    if (card.tcgplayer.prices[type].market) {
-                        marketPrice = card.tcgplayer.prices[type].market;
-                        break;
-                    }
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json'
                 }
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                // Try to get error details from response
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { error: `HTTP ${response.status}`, details: response.statusText };
+                }
+                
+                throw new Error(errorData.error || `API request failed: ${response.status}`);
             }
             
-            return {
-                id: card.id,
-                name: card.name,
-                set: card.set.name,
-                year: year,
-                rarity: card.rarity || 'N/A',
-                marketPrice: marketPrice,
-                artist: card.artist || 'N/A',
-                image: card.images?.small,
-                imageHD: card.images?.large,
-                types: card.types || [],
-                // Additional data to store for details view
-                fullData: {
-                    supertype: card.supertype,
-                    subtypes: card.subtypes || [],
-                    hp: card.hp || 'N/A',
-                    rules: card.rules || [],
-                    attacks: card.attacks || [],
-                    weaknesses: card.weaknesses || [],
-                    retreatCost: card.convertedRetreatCost || 'N/A',
-                    set: {
-                        name: card.set.name,
-                        series: card.set.series,
-                        printedTotal: card.set.printedTotal,
-                        total: card.set.total
+            const data = await response.json();
+            
+            if (!data.data || !Array.isArray(data.data)) {
+                throw new Error('Invalid response format from Pokemon API');
+            }
+            
+            console.log(`📊 Found ${data.data.length} cards`);
+            
+            // Extract required information from each card
+            return data.data.map(card => {
+                // Extract year from release date (format "YYYY/MM/DD")
+                const year = card.set.releaseDate ? card.set.releaseDate.split('/')[0] : 'N/A';
+                
+                // Get market price
+                let marketPrice = 'N/A';
+                if (card.tcgplayer && card.tcgplayer.prices) {
+                    const priceTypes = Object.keys(card.tcgplayer.prices);
+                    for (const type of priceTypes) {
+                        if (card.tcgplayer.prices[type].market) {
+                            marketPrice = card.tcgplayer.prices[type].market;
+                            break;
+                        }
                     }
                 }
-            };
-        });
+                
+                return {
+                    id: card.id,
+                    name: card.name,
+                    set: card.set.name,
+                    year: year,
+                    rarity: card.rarity || 'N/A',
+                    marketPrice: marketPrice,
+                    artist: card.artist || 'N/A',
+                    image: card.images?.small,
+                    imageHD: card.images?.large,
+                    types: card.types || [],
+                    // Additional data to store for details view
+                    fullData: {
+                        supertype: card.supertype,
+                        subtypes: card.subtypes || [],
+                        hp: card.hp || 'N/A',
+                        rules: card.rules || [],
+                        attacks: card.attacks || [],
+                        weaknesses: card.weaknesses || [],
+                        retreatCost: card.convertedRetreatCost || 'N/A',
+                        set: {
+                            name: card.set.name,
+                            series: card.set.series,
+                            printedTotal: card.set.printedTotal,
+                            total: card.set.total
+                        }
+                    }
+                };
+            });
+            
+        } catch (error) {
+            clearTimeout(timeoutId);
+            
+            if (error.name === 'AbortError') {
+                throw new Error('Search timed out - the Pokemon API is taking too long to respond');
+            }
+            
+            throw error;
+        }
     }
 
     function sortResults() {
