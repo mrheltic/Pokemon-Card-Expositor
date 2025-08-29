@@ -45,7 +45,7 @@ def main():
         ensure_dir(os.path.dirname(output_raw))
 
     try:
-        final_img, meta = convert_single(input_file, output_png, output_raw)
+        final_img, meta = convert_single(input_file, output_png, output_raw, metadata)
         print(f"🔄 Converted: {input_file}")
         if output_png:
             print(f"   ✅ Saved PNG: {output_png}")
