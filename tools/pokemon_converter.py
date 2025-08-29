@@ -113,13 +113,13 @@ def parse_metadata(metadata_str: Optional[str]) -> Optional[Dict[str, Any]]:
     try:
         metadata = json.loads(metadata_str)
         if isinstance(metadata, dict):
-            print(f"📋 Using metadata: {metadata.get('name', 'Unknown Card')}")
+            print(f"[INFO] Using metadata: {metadata.get('name', 'Unknown Card')}")
             return metadata
         else:
-            print("⚠️  Metadata must be a JSON object")
+            print("[WARN] Metadata must be a JSON object")
             return None
     except json.JSONDecodeError as e:
-        print(f"⚠️  Invalid metadata JSON: {e}")
+        print(f"[WARN] Invalid metadata JSON: {e}")
         return None
 
 
@@ -200,17 +200,17 @@ def main() -> int:
         
         # Handle validation mode
         if args.validate:
-            print("🔍 Validating conversion setup...")
+            print("[INFO] Validating conversion setup...")
             if validate_conversion_setup():
-                print("✅ Conversion setup is valid")
+                print("[SUCCESS] Conversion setup is valid")
                 return 0
             else:
-                print("❌ Conversion setup validation failed")
+                print("[ERROR] Conversion setup validation failed")
                 return 2
         
         # Validate minimum arguments
         if not args.input:
-            print("❌ Error: Input file or card ID is required")
+            print("[ERROR] Error: Input file or card ID is required")
             print("Use --help for usage information")
             return 1
         
@@ -226,7 +226,7 @@ def main() -> int:
         else:
             # Handle local file input
             if not os.path.exists(input_path):
-                print(f"❌ Error: Input file not found: {input_path}")
+                print(f"[ERROR] Error: Input file not found: {input_path}")
                 return 2
         
         # Normalize None strings to actual None
@@ -237,14 +237,14 @@ def main() -> int:
         
         # Validate at least one output format is requested
         if not output_png and not output_raw:
-            print("❌ Error: At least one output format (PNG or RAW) must be specified")
+            print("[ERROR] Error: At least one output format (PNG or RAW) must be specified")
             return 1
         
         # Check for existing output files
         try:
             check_output_files(output_png, output_raw, args.force)
         except FileExistsError as e:
-            print(f"❌ Error: {e}")
+            print(f"[ERROR] Error: {e}")
             return 1
         
         # Ensure output directories exist
@@ -254,42 +254,42 @@ def main() -> int:
             ensure_dir(os.path.dirname(output_raw))
         
         # Perform the conversion
-        print(f"🔄 Converting: {os.path.basename(input_path)}")
+        print(f"[INFO] Converting: {os.path.basename(input_path)}")
         
         if args.verbose:
-            print(f"   📁 Input: {input_path}")
+            print(f"   [INFO] Input: {input_path}")
             if output_png:
-                print(f"   🖼️  PNG Output: {output_png}")
+                print(f"   [INFO] PNG Output: {output_png}")
             if output_raw:
-                print(f"   📦 RAW Output: {output_raw}")
+                print(f"   [INFO] RAW Output: {output_raw}")
             if metadata:
-                print(f"   📋 Metadata: {metadata}")
+                print(f"   [INFO] Metadata: {metadata}")
         
         # Execute conversion pipeline
         final_img, composition_meta = convert_single(input_path, output_png, output_raw, metadata)
         
         # Report success
-        print(f"✅ Conversion completed successfully")
+        print(f"[SUCCESS] Conversion completed successfully")
         if output_png:
-            print(f"   🖼️  PNG saved: {os.path.basename(output_png)}")
+            print(f"   [INFO] PNG saved: {os.path.basename(output_png)}")
         if output_raw:
-            print(f"   📦 RAW saved: {os.path.basename(output_raw)}")
+            print(f"   [INFO] RAW saved: {os.path.basename(output_raw)}")
         
         if args.verbose:
             card_w, card_h, card_x, card_y, scale = composition_meta
-            print(f"   📏 Card: {card_w}x{card_h} at ({card_x}, {card_y}), scale: {scale:.2f}")
+            print(f"   [INFO] Card: {card_w}x{card_h} at ({card_x}, {card_y}), scale: {scale:.2f}")
         
         return 0
         
     except KeyboardInterrupt:
-        print("\n⚠️  Conversion interrupted by user")
+        print("\n[WARN] Conversion interrupted by user")
         return 1
         
     except Exception as e:
-        print(f"❌ Conversion failed: {e}")
+        print(f"[ERROR] Conversion failed: {e}")
         if args.verbose if 'args' in locals() else False:
             import traceback
-            print("\n🔍 Detailed error trace:")
+            print("\n[DEBUG] Detailed error trace:")
             traceback.print_exc()
         return 2
 
