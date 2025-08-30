@@ -567,3 +567,21 @@ table tr:hover {
     --input-border: var(--border-focus);
     --modal-bg: rgba(11, 18, 32, 0.95);
 }
+
+/* Footer signature */
+.footer-signature {
+    text-align: center;
+    padding: 8px 12px;
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(11, 18, 32, 0.8);
+    margin-top: 20px;
+    letter-spacing: 0.3px;
+}
+
+.footer-signature:hover {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}

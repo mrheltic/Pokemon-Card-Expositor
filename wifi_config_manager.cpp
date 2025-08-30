@@ -790,6 +790,9 @@ Loading system logs...
                 </div>
             </div>
         </div>
+        <div style="text-align: center; padding: 8px 12px; font-size: 10px; color: #b8c5d1; opacity: 0.6; border-top: 1px solid rgba(255,255,255,0.06); background: rgba(11, 18, 32, 0.8); margin-top: 20px; letter-spacing: 0.3px;">
+            mrheltic@Factual Tech
+        </div>
     </div>
 )HTMLEND";
 
