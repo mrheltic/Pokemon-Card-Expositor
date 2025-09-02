@@ -75,8 +75,10 @@ void ImageBrowser::scanSDCard() {
     
     File file = root.openNextFile();
     int imageCount = 0;
+    int maxFiles = 5000; // Safety limit for file iteration
+    int fileCounter = 0;
     
-    while (file) {
+    while (file && fileCounter < maxFiles) {
         if (!file.isDirectory()) {
             String filename = file.name();
             if (isImageFile(filename)) {
@@ -90,7 +92,13 @@ void ImageBrowser::scanSDCard() {
                 Serial.printf("[ImageBrowser] Found image: %s\n", filename.c_str());
             }
         }
+        file.close(); // Explicitly close file
         file = root.openNextFile();
+        fileCounter++;
+    }
+    
+    if (fileCounter >= maxFiles) {
+        Serial.printf("[ImageBrowser] WARNING: Reached maximum file limit (%d), scan may be incomplete\n", maxFiles);
     }
     
     root.close();
@@ -150,7 +158,9 @@ bool ImageBrowser::goToIndex(int index) {
 }
 
 String ImageBrowser::getCurrentImagePath() {
-    if (!hasImages() || currentIndex < 0) {
+    if (!hasImages() || currentIndex < 0 || currentIndex >= (int)imageList.size()) {
+        Serial.printf("[ImageBrowser] WARNING: Invalid state - hasImages:%s, currentIndex:%d, size:%d\n", 
+                     hasImages() ? "true" : "false", currentIndex, (int)imageList.size());
         return "";
     }
     

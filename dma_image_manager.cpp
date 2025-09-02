@@ -89,24 +89,39 @@ bool DMAImageManager::enableDMA() {
 }
 
 bool DMAImageManager::allocateDMABuffer() {
+    // Calculate optimal buffer size for ESP32-S3
+    size_t availableRAM = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    if (availableRAM == 0) {
+        availableRAM = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    }
+    
+    // Target: largest possible buffer for smooth transfers
+    size_t targetBufferSize = min((size_t)(SCREEN_WIDTH * SCREEN_HEIGHT * 2), availableRAM / 4);
+    targetBufferSize = max(targetBufferSize, (size_t)(SCREEN_WIDTH * 10 * 2)); // Minimum 10 lines
+    
     // Try PSRAM first (external SPIRAM) for large buffers
-    dmaBuffer = (uint8_t*)heap_caps_malloc(dmaBufferSize, MALLOC_CAP_SPIRAM);
+    dmaBuffer = (uint8_t*)heap_caps_malloc(targetBufferSize, MALLOC_CAP_SPIRAM);
     
     if (!dmaBuffer) {
         // Fallback to internal RAM with smaller buffer
-        dmaBufferSize = SCREEN_WIDTH * 50 * 2; // 50 lines buffer
-        dmaBuffer = (uint8_t*)heap_caps_malloc(dmaBufferSize, MALLOC_CAP_INTERNAL);
+        targetBufferSize = SCREEN_WIDTH * 50 * 2; // 50 lines buffer
+        dmaBuffer = (uint8_t*)heap_caps_malloc(targetBufferSize, MALLOC_CAP_INTERNAL);
     }
     
     if (!dmaBuffer) {
         // Last resort: very small buffer
-        dmaBufferSize = SCREEN_WIDTH * 10 * 2; // 10 lines minimum
-        dmaBuffer = (uint8_t*)heap_caps_malloc(dmaBufferSize, MALLOC_CAP_INTERNAL);
+        targetBufferSize = SCREEN_WIDTH * 10 * 2; // 10 lines minimum
+        dmaBuffer = (uint8_t*)heap_caps_malloc(targetBufferSize, MALLOC_CAP_INTERNAL);
     }
     
     if (!dmaBuffer) {
+        DMA_ERR("[DMA] ERROR: Unable to allocate any DMA buffer");
         return false;
     }
+    
+    // Only set dmaBufferSize after successful allocation
+    dmaBufferSize = targetBufferSize;
+    DMA_LOG("[DMA] Allocated %zu bytes DMA buffer", dmaBufferSize);
     
     return true;
 }
@@ -138,6 +153,12 @@ bool DMAImageManager::displayFixedSizeImageDMA(const char* filepath) {
         return false;
     }
     
+    // Validate filepath
+    if (!filepath || strlen(filepath) == 0) {
+        DMA_ERR("[DMA] ERROR: Invalid filepath provided");
+        return false;
+    }
+    
     // Loading fixed-size image
     
     // Open file
@@ -149,8 +170,16 @@ bool DMAImageManager::displayFixedSizeImageDMA(const char* filepath) {
     
     // Verify file size matches expected dimensions
     size_t fileSize = imageFile.size();
+    
+    // Add safety check for very large files (prevent integer overflow)
+    if (fileSize > (size_t)(10 * 1024 * 1024)) { // Max 10MB
+        DMA_ERR("[DMA] ERROR: file too large: %zu bytes", fileSize);
+        imageFile.close();
+        return false;
+    }
+    
     if (fileSize != FIXED_IMAGE_SIZE) {
-        DMA_ERR("[DMA] ERROR: file size mismatch (expected %d, got %d)", FIXED_IMAGE_SIZE, fileSize);
+        DMA_ERR("[DMA] ERROR: file size mismatch (expected %d, got %zu)", FIXED_IMAGE_SIZE, fileSize);
         imageFile.close();
         return false;
     }
@@ -177,10 +206,16 @@ bool DMAImageManager::displayFixedSizeImageDMA(const char* filepath) {
             if (bytesRead == 0) break;
             lcd->drawBitmap(0, 0, FIXED_IMAGE_WIDTH, FIXED_IMAGE_HEIGHT, dmaBuffer);
             totalBytesRead += bytesRead;
+            
+            // Prevent watchdog timeout for large transfers
+            if (totalBytesRead % (64 * 1024) == 0) {
+                yield();
+            }
         }
     } else {
         // CPU fallback - minimal logging
-        uint8_t* buffer = (uint8_t*)malloc(4096);
+        const size_t CPU_BUFFER_SIZE = 4096;
+        uint8_t* buffer = (uint8_t*)malloc(CPU_BUFFER_SIZE);
         if (!buffer) {
             DMA_ERR("[DMA] ERROR: cannot allocate CPU buffer");
             imageFile.close();
@@ -188,14 +223,43 @@ bool DMAImageManager::displayFixedSizeImageDMA(const char* filepath) {
         }
 
         size_t totalBytesRead = 0;
+        unsigned long startTime = millis();
+        const unsigned long TIMEOUT_MS = 30000; // 30 second timeout
+        
         while (totalBytesRead < static_cast<size_t>(FIXED_IMAGE_SIZE)) {
-            size_t bytesRead = imageFile.read(buffer, 4096);
-            if (bytesRead == 0) break;
+            // Check for timeout to prevent infinite loops
+            if (millis() - startTime > TIMEOUT_MS) {
+                DMA_ERR("[DMA] ERROR: Timeout reading fixed size image");
+                break;
+            }
+            
+            size_t bytesRead = imageFile.read(buffer, CPU_BUFFER_SIZE);
+            if (bytesRead == 0) {
+                DMA_ERR("[DMA] ERROR: Unexpected end of file");
+                break;
+            }
+            
+            // Validate data integrity before display
+            if (totalBytesRead + bytesRead > static_cast<size_t>(FIXED_IMAGE_SIZE)) {
+                bytesRead = static_cast<size_t>(FIXED_IMAGE_SIZE) - totalBytesRead;
+            }
+            
             lcd->drawBitmap(0, 0, FIXED_IMAGE_WIDTH, FIXED_IMAGE_HEIGHT, buffer);
             totalBytesRead += bytesRead;
+            
+            // Prevent watchdog timeout and check memory integrity
+            if (totalBytesRead % (32 * 1024) == 0) {
+                yield();
+                // Check if buffer is still valid
+                if (!buffer) {
+                    DMA_ERR("[DMA] ERROR: Buffer corrupted during read");
+                    break;
+                }
+            }
         }
 
         free(buffer);
+        buffer = nullptr; // Prevent use-after-free;
     }
     
     imageFile.close();
@@ -223,14 +287,19 @@ bool DMAImageManager::displayRAWRGB565DMA(const char* filepath) {
     size_t totalSize = imageFile.size();
     size_t totalTransferred = 0;
     size_t linesPerChunk = dmaBufferSize / (SCREEN_WIDTH * 2);
+    int maxIterations = (totalSize / dmaBufferSize) + 2; // Safety limit
+    int currentIteration = 0;
     
-    while (totalTransferred < totalSize && imageFile.available()) {
+    while (totalTransferred < totalSize && imageFile.available() && currentIteration < maxIterations) {
         // Calculate chunk parameters
         size_t remainingBytes = totalSize - totalTransferred;
         size_t chunkSize = min(dmaBufferSize, remainingBytes);
         size_t bytesRead = imageFile.read(dmaBuffer, chunkSize);
         
-        if (bytesRead == 0) break;
+        if (bytesRead == 0) {
+            Serial.println("[DMA] WARNING: Read returned 0 bytes, breaking loop");
+            break;
+        }
         
         // Calculate display coordinates
         size_t currentPixel = totalTransferred / 2; // RGB565 = 2 bytes/pixel
@@ -243,11 +312,16 @@ bool DMAImageManager::displayRAWRGB565DMA(const char* filepath) {
         }
         
         totalTransferred += bytesRead;
+        currentIteration++;
         
         // Small delay to prevent watchdog
         if (height > 20) {
             yield();
         }
+    }
+    
+    if (currentIteration >= maxIterations) {
+        Serial.println("[DMA] WARNING: Maximum iterations reached, possible infinite loop prevented");
     }
     
     imageFile.close();

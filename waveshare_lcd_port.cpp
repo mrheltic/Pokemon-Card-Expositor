@@ -33,13 +33,26 @@ static esp_panel::drivers::LCD *create_lcd_without_config(void)
 #endif
     );
 
+    if (!bus) {
+        Serial.println("ERROR: Failed to create RGB bus");
+        return nullptr;
+    }
+
     /**
      * Take `ST7262` as an example, the following is the actual code after macro expansion:
      *      LCD_ST7262(bus, 24, -1);
      */
-    return new EXAMPLE_LCD_CLASS(
+    esp_panel::drivers::LCD* lcd = new EXAMPLE_LCD_CLASS(
         EXAMPLE_LCD_NAME, bus, EXAMPLE_LCD_WIDTH, EXAMPLE_LCD_HEIGHT, EXAMPLE_LCD_COLOR_BITS, EXAMPLE_LCD_RST_IO
     );
+    
+    if (!lcd) {
+        Serial.println("ERROR: Failed to create LCD instance");
+        delete bus;  // Clean up bus if LCD creation fails
+        return nullptr;
+    }
+    
+    return lcd;
 }
 
 static esp_panel::drivers::LCD *create_lcd_with_config(void)

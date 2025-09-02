@@ -70,9 +70,8 @@ public:
     void update();
 };
 
-// Global instance for web interface callbacks
+// Global instance declarations
 extern SystemManager* g_systemManager;
-
 extern SystemManager systemManager;
 
 #endif

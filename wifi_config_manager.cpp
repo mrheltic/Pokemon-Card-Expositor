@@ -1407,13 +1407,25 @@ const char* html_script = R"HTMLEND(
 </html>
 )HTMLEND";
 
-// Function to build complete HTML
+// Function to build complete HTML with memory optimization
 String buildCompleteHTML() {
-    String html = String(html_header) + 
-                  String(html_wifi_form) + 
-                  String(html_slideshow_form) + 
-                  String(html_controls) + 
-                  String(html_script);
+    // Calculate total size to prevent multiple reallocations
+    size_t totalSize = strlen(html_header) + strlen(html_wifi_form) + 
+                      strlen(html_slideshow_form) + strlen(html_controls) + 
+                      strlen(html_script) + 1000; // Extra buffer for safety
+    
+    // Reserve space to prevent memory fragmentation
+    String html;
+    html.reserve(totalSize);
+    
+    // Build HTML in parts to avoid stack overflow
+    html += html_header;
+    html += html_wifi_form;
+    html += html_slideshow_form;
+    html += html_controls;
+    html += html_script;
+    
+    Serial.printf("[WiFi] Built HTML page: %d bytes (reserved: %zu)\n", html.length(), totalSize);
     return html;
 }
 
@@ -1485,6 +1497,7 @@ bool WiFiConfigManager::initialize() {
             Serial.println("[WiFi] ERROR: Failed to create web server instance");
             return false;
         }
+        Serial.println("[WiFi] Web server instance created successfully");
     }
     
     // Setup web server routes
@@ -1566,10 +1579,21 @@ bool WiFiConfigManager::connectToWiFi() {
     
     // Wait for connection with timeout
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    const int MAX_ATTEMPTS = 20;
+    unsigned long startTime = millis();
+    const unsigned long TIMEOUT_MS = 10000; // 10 second timeout
+    
+    while (WiFi.status() != WL_CONNECTED && attempts < MAX_ATTEMPTS && 
+           (millis() - startTime) < TIMEOUT_MS) {
         delay(500);
         Serial.print(".");
         attempts++;
+        
+        // Extra safety: check if WiFi is still in station mode
+        if (WiFi.getMode() != WIFI_STA && WiFi.getMode() != WIFI_AP_STA) {
+            Serial.println("\n[WiFi] WiFi mode changed unexpectedly, breaking connection attempt");
+            break;
+        }
     }
     Serial.println();
     
@@ -1987,10 +2011,19 @@ void WiFiConfigManager::handleSaveConfig() {
     }
     
     String body = webServer->arg("plain");
-    DynamicJsonDocument doc(2048);
+    
+    // Validate JSON size to prevent buffer overflow
+    if (body.length() > 4096) {
+        Serial.printf("[WiFi] ERROR: Request body too large: %d bytes\n", body.length());
+        webServer->send(413, "text/plain", "Request Entity Too Large");
+        return;
+    }
+    
+    DynamicJsonDocument doc(4096); // Increased buffer size with validation
     DeserializationError error = deserializeJson(doc, body);
     
     if (error) {
+        Serial.printf("[WiFi] ERROR: JSON parse error: %s\n", error.c_str());
         webServer->send(400, "text/plain", "Invalid JSON");
         return;
     }
@@ -2772,16 +2805,26 @@ uint32_t WiFiConfigManager::getImageCount() {
     }
     
     uint32_t count = 0;
+    int maxFiles = 10000; // Safety limit to prevent infinite loop
+    int fileCounter = 0;
+    
     File file = root.openNextFile();
-    while (file) {
+    while (file && fileCounter < maxFiles) {
         String fileName = file.name();
         if (fileName.endsWith(".raw") || fileName.endsWith(".jpg") || 
             fileName.endsWith(".png") || fileName.endsWith(".bmp")) {
             count++;
         }
+        file.close(); // Explicitly close file to prevent resource leak
         file = root.openNextFile();
+        fileCounter++;
     }
     
+    if (fileCounter >= maxFiles) {
+        Serial.printf("[WiFi] WARNING: Reached maximum file count limit (%d), possible infinite loop prevented\n", maxFiles);
+    }
+    
+    root.close(); // Ensure root directory is closed
     return count;
 }
 

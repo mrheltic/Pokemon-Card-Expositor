@@ -92,16 +92,29 @@ void LCDManager::fillScreen(uint16_t color) {
         return;
     }
     
-    // Get screen dimensions
+    // Get screen dimensions with safety checks
     int width = EXAMPLE_LCD_WIDTH;
     int height = EXAMPLE_LCD_HEIGHT;
     
+    // Validate dimensions
+    if (width <= 0 || height <= 0 || width > 4096 || height > 4096) {
+        Serial.printf("ERROR: Invalid screen dimensions: %dx%d\n", width, height);
+        return;
+    }
+    
     // Create a buffer for one row (width * 2 bytes per pixel for 16-bit color)
-    size_t row_size = width * 2; // 2 bytes per pixel for 16-bit color
+    size_t row_size = (size_t)width * 2; // 2 bytes per pixel for 16-bit color
+    
+    // Check for potential overflow
+    if (row_size < width || row_size > SIZE_MAX / 2) {
+        Serial.println("ERROR: Row size calculation overflow");
+        return;
+    }
+    
     uint8_t* rowBuffer = (uint8_t*)malloc(row_size);
     
     if (!rowBuffer) {
-        Serial.println("Failed to allocate memory for screen fill");
+        Serial.printf("Failed to allocate %zu bytes for screen fill\n", row_size);
         return;
     }
     
@@ -114,6 +127,11 @@ void LCDManager::fillScreen(uint16_t color) {
     // Fill screen row by row
     for (int y = 0; y < height; y++) {
         displayInstance->drawBitmap(0, y, width, 1, rowBuffer, 100);
+        
+        // Yield occasionally to prevent watchdog timeout
+        if (y % 50 == 0) {
+            yield();
+        }
     }
     
     free(rowBuffer);

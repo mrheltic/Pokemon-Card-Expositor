@@ -15,13 +15,19 @@ extern WiFiConfigManager wifiConfigManager;
 #endif
 
 SystemManager systemManager;
-SystemManager* g_systemManager = &systemManager;  // Global reference for web interface
+SystemManager* g_systemManager = nullptr;  // Initialize as nullptr for safety
 
 SystemManager::SystemManager() : systemInitialized(false), slideshowActive(false), 
                                  lastSlideshowUpdate(0), currentImageIndex(0) {
+    // Set global pointer when instance is created
+    g_systemManager = this;
 }
 
 SystemManager::~SystemManager() {
+    // Clear global pointer before destruction
+    if (g_systemManager == this) {
+        g_systemManager = nullptr;
+    }
     shutdownSystem();
 }
 
@@ -193,6 +199,18 @@ void SystemManager::runImageTest() {
 
 void SystemManager::displayImage(const char* filepath) {
     if (!systemInitialized) {
+        return;
+    }
+    
+    // Validate filepath
+    if (!filepath || strlen(filepath) == 0) {
+        Serial.println("ERROR: Invalid filepath provided");
+        return;
+    }
+    
+    // Check if file exists before attempting to display
+    if (!SD.exists(filepath)) {
+        Serial.printf("ERROR: File not found: %s\n", filepath);
         return;
     }
     

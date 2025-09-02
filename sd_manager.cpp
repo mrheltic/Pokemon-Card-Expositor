@@ -23,7 +23,13 @@ bool SDManager::init() {
         return false;
     }
     
-    expander->init();
+    if (!expander->init()) {
+        Serial.println("Failed to initialize IO expander");
+        delete expander;
+        expander = nullptr;
+        return false;
+    }
+    
     expander->begin();
     expander->multiPinMode(TP_RST | LCD_BL | LCD_RST | SD_CS | USB_SEL, OUTPUT);
     expander->multiDigitalWrite(TP_RST | LCD_BL | LCD_RST, HIGH);

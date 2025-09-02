@@ -141,7 +141,12 @@ void deleteFile(fs::FS &fs, const char * path) {
 // Test file IO performance
 void testFileIO(fs::FS &fs, const char * path) {
     File file = fs.open(path);
-    static uint8_t buf[512];  // Buffer
+    uint8_t* buf = (uint8_t*)malloc(512);  // Dynamic allocation instead of static
+    if (!buf) {
+        Serial.println("Failed to allocate buffer for file IO test");
+        return;
+    }
+    
     size_t len = 0;
     uint32_t start = millis();
     uint32_t end = start;
@@ -162,12 +167,15 @@ void testFileIO(fs::FS &fs, const char * path) {
         file.close();
     } else {
         Serial.println("Failed to open file for reading");
+        free(buf);
+        return;
     }
 
     // Write test
     file = fs.open(path, FILE_WRITE);
     if (!file) {
         Serial.println("Failed to open file for writing");
+        free(buf);
         return;
     }
 
@@ -179,4 +187,6 @@ void testFileIO(fs::FS &fs, const char * path) {
     end = millis() - start;
     Serial.printf("%u bytes written for %u ms\n", 2048 * 512, end);
     file.close();
+    
+    free(buf); // Clean up allocated buffer
 }

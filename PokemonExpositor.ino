@@ -149,6 +149,20 @@ void handleSerialCommands() {
 }
 
 void executeCommand(const String& command) {
+    // Validate command length to prevent overflow
+    if (command.length() > 256) {
+        Serial.println("❌ Command too long (max 256 characters)");
+        return;
+    }
+    
+    // Validate command is not empty after trimming
+    String trimmedCommand = command;
+    trimmedCommand.trim();
+    if (trimmedCommand.length() == 0) {
+        Serial.println("❌ Empty command");
+        return;
+    }
+    
     // Image commands
     if (command == "show") {
         systemManager.displayImage(DEFAULT_IMAGE_PATH);
@@ -198,11 +212,26 @@ void executeCommand(const String& command) {
         int spaceIndex = command.indexOf(' ');
         if (spaceIndex > 0) {
             String numberStr = command.substring(spaceIndex + 1);
-            int brightness = numberStr.toInt();
-            if (brightness >= 0 && brightness <= 100) {
-                systemManager.setBrightness(brightness);
+            numberStr.trim();
+            
+            // Validate that the string contains only digits
+            bool isValidNumber = true;
+            for (int i = 0; i < numberStr.length(); i++) {
+                if (!isDigit(numberStr.charAt(i))) {
+                    isValidNumber = false;
+                    break;
+                }
+            }
+            
+            if (isValidNumber && numberStr.length() > 0) {
+                int brightness = numberStr.toInt();
+                if (brightness >= 0 && brightness <= 100) {
+                    systemManager.setBrightness(brightness);
+                } else {
+                    Serial.println("❌ Brightness must be 0-100%");
+                }
             } else {
-                Serial.println("❌ Brightness must be 0-100%");
+                Serial.println("❌ Invalid brightness value. Use numbers only (0-100)");
             }
         }
     }
@@ -305,11 +334,43 @@ void executeCommand(const String& command) {
 void clearTopArea() {
     auto lcd = waveshare_lcd_get_instance();
     if (lcd) {
-        uint8_t* clearBuffer = (uint8_t*)malloc(1024 * 2 * 50);
+        // Use safer constants to prevent magic number issues
+        const uint16_t CLEAR_WIDTH = 1024;
+        const uint16_t CLEAR_HEIGHT = 50;
+        // Validate input parameters to prevent overflow
+        if (CLEAR_WIDTH > 2048 || CLEAR_HEIGHT > 2048) {
+            Serial.printf("ERROR: Clear dimensions too large: %dx%d\n", CLEAR_WIDTH, CLEAR_HEIGHT);
+            return;
+        }
+        
+        const uint16_t BYTES_PER_PIXEL = 2; // RGB565
+        
+        // Use safer calculation with overflow check
+        size_t bufferSize = 0;
+        if (__builtin_mul_overflow((size_t)CLEAR_WIDTH * CLEAR_HEIGHT, BYTES_PER_PIXEL, &bufferSize)) {
+            Serial.println("ERROR: Buffer size calculation overflow");
+            return;
+        }
+        
+        // Check for potential overflow and reasonable limits
+        if (bufferSize > 1024 * 1024 || bufferSize == 0) { // Max 1MB for safety
+            Serial.printf("ERROR: Buffer size out of range: %zu bytes\n", bufferSize);
+            return;
+        }
+        
+        uint8_t* clearBuffer = (uint8_t*)malloc(bufferSize);
         if (clearBuffer) {
-            memset(clearBuffer, 0, 1024 * 2 * 50);
-            lcd->drawBitmap(0, 0, 1024, 50, clearBuffer);
+            // Secure clear of buffer before use
+            memset(clearBuffer, 0, bufferSize);
+            
+            // Validate buffer integrity before drawing
+            if (clearBuffer) {
+                lcd->drawBitmap(0, 0, CLEAR_WIDTH, CLEAR_HEIGHT, clearBuffer);
+            }
             free(clearBuffer);
+            clearBuffer = nullptr; // Prevent use-after-free
+        } else {
+            Serial.printf("ERROR: Failed to allocate %zu bytes for clear buffer\n", bufferSize);
         }
     }
 }
