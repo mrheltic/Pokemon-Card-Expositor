@@ -1,5 +1,23 @@
 # Pokemon Card Expositor
 
+<!-- Badges -->
+<p align="left">
+   <a href="https://github.com/mrheltic/PokemonCardExpositor-Firmware/issues"><img src="https://img.shields.io/github/issues/mrheltic/PokemonCardExpositor-Firmware?style=flat-square" alt="Issues"></a>
+   <a href="https://github.com/mrheltic/PokemonCardExpositor-Firmware/commits/main"><img src="https://img.shields.io/github/last-commit/mrheltic/PokemonCardExpositor-Firmware?style=flat-square" alt="Last Commit"></a>
+   <a href="https://github.com/mrheltic/PokemonCardExpositor-Firmware/contributors"><img src="https://img.shields.io/github/contributors/mrheltic/PokemonCardExpositor-Firmware?style=flat-square" alt="Contributors"></a>
+   <a href="https://github.com/mrheltic/PokemonCardExpositor-Firmware/stargazers"><img src="https://img.shields.io/github/stars/mrheltic/PokemonCardExpositor-Firmware?style=flat-square" alt="Stars"></a>
+</p>
+
+<!-- Tech Badges -->
+<p align="left">
+   <img src="https://img.shields.io/badge/Platform-ESP32--S3-blue?style=flat-square&logo=espressif" alt="ESP32-S3">
+   <img src="https://img.shields.io/badge/Display-5''%20LCD-yellow?style=flat-square" alt="LCD">
+   <img src="https://img.shields.io/badge/Arduino-IDE-00979D?style=flat-square&logo=arduino&logoColor=white" alt="Arduino IDE">
+   <img src="https://img.shields.io/badge/Python-3.x-blue?style=flat-square&logo=python&logoColor=white" alt="Python">
+   <img src="https://img.shields.io/badge/Node.js-18.x-green?style=flat-square&logo=node.js&logoColor=white" alt="Node.js">
+   <img src="https://img.shields.io/badge/Waveshare-Panel-orange?style=flat-square" alt="Waveshare">
+</p>
+
 This project turns a Waveshare ESP32-S3 board with a 5-inch LCD into a digital Pokemon card display. You can search for cards online, download them, and display them on the device.
 
 ## What it does
@@ -15,6 +33,11 @@ This project turns a Waveshare ESP32-S3 board with a 5-inch LCD into a digital P
 - Waveshare ESP32-S3 RGB 5" LCD board (1024x600 version works best)
 - MicroSD card (FAT32 format)
 - WiFi connection (optional)
+
+### Board Documentation
+
+- **Wiki**: [ESP32-S3-Touch-LCD-5 Wiki](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-5#Resources)
+- **Schematic**: [ESP32-S3-Touch-LCD-5-Sch.pdf](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-5/ESP32-S3-Touch-LCD-5-Sch.pdf)
 
 ## Setup Instructions
 
@@ -32,9 +55,13 @@ This project turns a Waveshare ESP32-S3 board with a 5-inch LCD into a digital P
 3. **Configure Board Settings**:
    - Select `Tools` → `Board` → `ESP32 Arduino` → `ESP32S3 Dev Module`
    - Set the following parameters:
-     - **USB CDC On Boot**: Enabled
-     - **Flash Size**: 16MB (or according to your board)
-     - **Partition Scheme**: Default 4MB with spiffs
+   - **USB CDC On Boot**: Enabled
+   - **Flash Size**: 16MB (or according to your board)
+   - **Partition Scheme**: Default 4MB with spiffs
+
+---
+
+![Arduino IDE Settings](docs/media/arduino-settings.png)
 
 4. **Upload the Firmware**:
    - Open `PokemonExpositor.ino` in Arduino IDE
